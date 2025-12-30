@@ -123,14 +123,14 @@ dependencies {
     // To change the versions see the gradle.properties file
     implementation "net.neoforged:neoforge:${project.neoforge_version}"
 
-    // Forgified Fabric API for compatibility
-    implementation "dev.su5ed.sinytra.fabric-api:fabric-api:${project.forgified_fabric_version}+${project.neoforge_version}"
+    // Forgified Fabric API for compatibility (includes Fabric Loader API)
+    implementation "org.sinytra.forgified-fabric-api:forgified-fabric-api:${project.forgified_fabric_version}"
 
     // Sodium for NeoForge (0.6.9 - compatible with MC 1.21.1)
     implementation "maven.modrinth:sodium:mc1.21.1-0.6.9-neoforge"
 
     // Lithium for NeoForge
-    implementation("maven.modrinth:lithium:mc1.21.1-0.18.0-neoforge")
+    implementation("maven.modrinth:lithium:mc1.21.1-0.14.7-neoforge")
 
     // Optional mod dependencies - commented out for initial port
     // TODO: Add NeoForge versions when available
@@ -198,6 +198,9 @@ tasks.register('makeExcludedRocksDB', Zip) {
     }
 }
 
+// NeoForge: processIncludeJars is Fabric Loom specific - removed
+// TODO: Implement NeoForge equivalent for RocksDB filtering if needed
+/*
 processIncludeJars {
     outputs.cacheIf {true}
 
@@ -205,7 +208,11 @@ processIncludeJars {
     jars = jars.filter {!it.name.startsWith('rocksdb')}
     jars.from(makeExcludedRocksDB)
 }
+*/
 
+// NeoForge: remapJar is handled by NeoGradle automatically
+// TODO: Re-implement git hash classifier for NeoForge jar task
+/*
 remapJar {
     doFirst {
         delete fileTree(getDestinationDirectory().get())
@@ -218,6 +225,7 @@ remapJar {
         }
     }
 }
+*/
 
 project.ext.lwjglVersion = "3.3.3"
 project.ext.lwjglNatives = "natives-windows"
@@ -231,27 +239,25 @@ dependencies {
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
     implementation "org.lwjgl:lwjgl"
-    include(implementation "org.lwjgl:lwjgl-lmdb")
-    include(implementation "org.lwjgl:lwjgl-zstd")
+    implementation "org.lwjgl:lwjgl-lmdb"
+    implementation "org.lwjgl:lwjgl-zstd"
     runtimeOnly "org.lwjgl:lwjgl:$lwjglVersion:natives-windows"
     runtimeOnly "org.lwjgl:lwjgl:$lwjglVersion:natives-linux"
-    include(runtimeOnly "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-windows")
-    include(runtimeOnly "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-windows")
-    include(runtimeOnly "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-linux")
-    include(runtimeOnly "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-linux")
+    runtimeOnly "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-linux"
+    runtimeOnly "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-linux"
 
-    include(implementation 'redis.clients:jedis:5.1.0')
-    include(implementation('org.rocksdb:rocksdbjni:10.2.1'))
-    include(implementation 'org.apache.commons:commons-pool2:2.12.0')
-    include(implementation 'org.lz4:lz4-java:1.8.0')
-    include(implementation('org.tukaani:xz:1.10'))
+    implementation 'redis.clients:jedis:5.1.0'
+    implementation 'org.rocksdb:rocksdbjni:10.2.1'
+    implementation 'org.apache.commons:commons-pool2:2.12.0'
+    implementation 'org.lz4:lz4-java:1.8.0'
+    implementation 'org.tukaani:xz:1.10'
 
-    if (true) {
-        if (!isInGHA) {
-            minecraftRuntimeLibraries('org.xerial:sqlite-jdbc:3.49.1.0')
-        }
-    } else {
-        include(implementation('org.xerial:sqlite-jdbc:3.49.1.0'))
+    // NeoForge: minecraftRuntimeLibraries is Fabric Loom specific
+    // Use regular implementation instead
+    if (!isInGHA) {
+        runtimeOnly 'org.xerial:sqlite-jdbc:3.49.1.0'
     }
     //implementation 'org.rocksdb:rocksdbjni:8.10.0'
     //implementation 'redis.clients:jedis:5.1.0'
