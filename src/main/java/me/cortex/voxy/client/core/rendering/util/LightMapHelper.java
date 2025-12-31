@@ -8,6 +8,9 @@ import net.minecraft.client.Minecraft;
 public class LightMapHelper {
     public static void bind(int lightingIndex) {
         glBindSampler(lightingIndex, 0);
-        glBindTextureUnit(lightingIndex, ((com.mojang.blaze3d.opengl.GlTexture)(Minecraft.getInstance().gameRenderer.lightTexture().getTextureView().texture())).glId());
+        // TODO: MC 1.21.1 - LightTexture.getTextureView() and Blaze3D GlTexture not accessible
+        // Need mixin accessor for light texture GL ID
+        throw new UnsupportedOperationException("Light texture GL ID access not yet implemented for MC 1.21.1");
+        // glBindTextureUnit(lightingIndex, getLightTextureId());
     }
 }

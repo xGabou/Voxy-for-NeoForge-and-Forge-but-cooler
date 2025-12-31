@@ -2,7 +2,8 @@ package me.cortex.voxy.client.core.model;
 
 import net.caffeinemc.mods.sodium.client.util.color.ColorSRGB;
 import net.minecraft.client.renderer.texture.MipmapGenerator;
-import net.minecraft.util.ARGB;
+// MC 1.21.1: ARGB class moved/removed - TODO: find replacement for linearToSrgbChannel()
+// import net.minecraft.util.ARGB;
 
 //Texturing utils to manipulate data from the model bakery
 public class TextureUtils {
@@ -228,11 +229,13 @@ public class TextureUtils {
             a += darkend ? (C11 >>> 24) : ColorSRGB.srgbToLinear(C11 >>> 24);
         }
 
+        // MC 1.21.1: ARGB.linearToSrgbChannel() unavailable - using direct value as placeholder
+        // TODO: Implement proper linear to sRGB conversion for alpha channel
         return ColorSRGB.linearToSrgb(
                 r / 4,
                 g / 4,
                 b / 4,
-                darkend ? ((int) a) / 4 : ARGB.linearToSrgbChannel(a / 4)
+                darkend ? ((int) a) / 4 : (int) (a / 4)
         );
     }
 }

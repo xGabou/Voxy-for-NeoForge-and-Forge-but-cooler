@@ -46,6 +46,12 @@ sourceSets {
 
             // Sodium config integration mixin
             exclude 'me/cortex/voxy/client/mixin/sodium/MixinVideoSettingsScreen.java'
+
+            // Blaze3D OpenGL debug mixin (GlDebug class not accessible in MC 1.21.1)
+            exclude 'me/cortex/voxy/client/mixin/minecraft/MixinGlDebug.java'
+
+            // Fog renderer mixin (fog package moved/removed in MC 1.21.1)
+            exclude 'me/cortex/voxy/client/mixin/minecraft/MixinFogRenderer.java'
         }
     }
 }
@@ -210,6 +216,9 @@ jar {
 
 
 
+// NeoForge: makeExcludedRocksDB and processIncludeJars are Fabric Loom specific - removed
+// TODO: Implement NeoForge equivalent for RocksDB filtering if needed
+/*
 tasks.register('makeExcludedRocksDB', Zip) {
     archiveExtension.set("jar")
     entryCompression = ZipEntryCompression.STORED
@@ -220,7 +229,7 @@ tasks.register('makeExcludedRocksDB', Zip) {
     def files = configurations.includeInternal.incoming.getArtifacts().getArtifactFiles().filter {
         it.name.startsWith('rocksdb')
     }
-    
+
     from {->zipTree(files.first())}
     archiveFileName.set(providers.provider{files.first().name})
 
@@ -236,9 +245,6 @@ tasks.register('makeExcludedRocksDB', Zip) {
     }
 }
 
-// NeoForge: processIncludeJars is Fabric Loom specific - removed
-// TODO: Implement NeoForge equivalent for RocksDB filtering if needed
-/*
 processIncludeJars {
     outputs.cacheIf {true}
 

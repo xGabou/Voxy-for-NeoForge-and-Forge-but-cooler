@@ -11,8 +11,10 @@ import me.cortex.voxy.common.world.WorldEngine;
 import me.cortex.voxy.common.world.WorldUpdater;
 import me.cortex.voxy.common.world.other.Mapper;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -52,9 +54,10 @@ public class DHImporter implements IDataImporter {
     private final Level world;
     private final int bottomOfWorld;
     private final int worldHeightSections;
-    private final Holder.Reference<Biome> defaultBiome;
-    private final Registry<Biome> biomeRegistry;
-    private final Registry<Block> blockRegistry;
+    // MC 1.21.1: Registry → HolderLookup.RegistryLookup, Holder.Reference → Holder
+    private final Holder<Biome> defaultBiome;
+    private final HolderLookup.RegistryLookup<Biome> biomeRegistry;
+    private final HolderLookup.RegistryLookup<Block> blockRegistry;
     private Thread runner;
     private volatile boolean isRunning = false;
     private final AtomicInteger processedChunks = new AtomicInteger();
@@ -103,7 +106,8 @@ public class DHImporter implements IDataImporter {
         this.defaultBiome = this.biomeRegistry.getOrThrow(Biomes.PLAINS);
         this.blockRegistry = mcWorld.registryAccess().lookupOrThrow(Registries.BLOCK);
 
-        this.bottomOfWorld = mcWorld.getMinY();
+        // MC 1.21.1: Level.getMinY() → getMinBuildHeight()
+        this.bottomOfWorld = mcWorld.getMinBuildHeight();
         int worldHeight = mcWorld.getHeight();
         this.worldHeightSections = (worldHeight+15)/16;
 
@@ -227,7 +231,10 @@ public class DHImporter implements IDataImporter {
                 throw new IllegalStateException();
             {
                 var biomeRes = ResourceLocation.parse(encEntry.substring(0, idx));
-                var biome = this.biomeRegistry.get(biomeRes).orElse(this.defaultBiome);
+                // MC 1.21.1: RegistryLookup.get() requires ResourceKey, returns Optional<Holder.Reference<T>>
+                // Explicit type needed because orElse() with Holder<Biome> default causes type mismatch
+                var biomeKey = ResourceKey.create(Registries.BIOME, biomeRes);
+                Holder<Biome> biome = this.biomeRegistry.get(biomeKey).map(h -> (Holder<Biome>)h).orElse(this.defaultBiome);
                 biomeId = this.engine.getMapper().getIdForBiome(biome);
             }
             {
@@ -241,7 +248,9 @@ public class DHImporter implements IDataImporter {
                         bStateStr = encEntry.substring(sIdx + STATE_STRING_SEPARATOR.length());
                     }
                     var bId = ResourceLocation.parse(encEntry.substring(b, sIdx != -1 ? sIdx : encEntry.length()));
-                    var maybeBlock = this.blockRegistry.get(bId);
+                    // MC 1.21.1: RegistryLookup.get() requires ResourceKey, returns Optional<Holder<T>>
+                    var blockKey = ResourceKey.create(Registries.BLOCK, bId);
+                    var maybeBlock = this.blockRegistry.get(blockKey);
                     Block block = Blocks.AIR;
                     if (maybeBlock.isPresent()) {
                         block = maybeBlock.get().value();

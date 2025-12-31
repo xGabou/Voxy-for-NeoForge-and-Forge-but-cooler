@@ -34,7 +34,10 @@ public class BakedBlockEntityModel {
                 if (textureId == null) {
                     Logger.error("ERROR: Empty texture id for layer: " + layer);
                 } else {
-                    texId = ((com.mojang.blaze3d.opengl.GlTexture)Minecraft.getInstance().getTextureManager().getTexture(textureId).getTexture()).glId();
+                    // TODO: MC 1.21.1 - AbstractTexture.getTexture() and Blaze3D GlTexture.glId() not accessible
+                    // Need mixin accessor for texture GL ID
+                    throw new UnsupportedOperationException("Texture GL ID access not yet implemented for MC 1.21.1");
+                    // texId = getTextureId(Minecraft.getInstance().getTextureManager().getTexture(textureId));
                 }
             }
             if (texId == 0) continue;

@@ -17,9 +17,54 @@ import net.minecraft.world.level.chunk.Palette;
 import net.minecraft.world.level.chunk.PalettedContainer;
 import net.minecraft.world.level.chunk.PalettedContainerRO;
 import net.minecraft.world.level.chunk.SingleValuePalette;
+import java.lang.reflect.Field;
 import java.util.WeakHashMap;
 
 public class WorldConversionFactory {
+    // MC 1.21.1: PalettedContainer.Data class is inaccessible, use reflection to access internal fields
+    private static final Field DATA_FIELD;
+    private static final Field PALETTE_FIELD;
+    private static final Field STORAGE_FIELD;
+
+    static {
+        try {
+            DATA_FIELD = PalettedContainer.class.getDeclaredField("data");
+            DATA_FIELD.setAccessible(true);
+
+            Class<?> dataClass = Class.forName("net.minecraft.world.level.chunk.PalettedContainer$Data");
+            PALETTE_FIELD = dataClass.getDeclaredField("palette");
+            PALETTE_FIELD.setAccessible(true);
+            STORAGE_FIELD = dataClass.getDeclaredField("storage");
+            STORAGE_FIELD.setAccessible(true);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize PalettedContainer reflection", e);
+        }
+    }
+
+    private static Object getData(PalettedContainer<?> container) {
+        try {
+            return DATA_FIELD.get(container);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to access PalettedContainer.data", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> Palette<T> getPalette(Object data) {
+        try {
+            return (Palette<T>) PALETTE_FIELD.get(data);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to access Data.palette", e);
+        }
+    }
+
+    private static Object getStorage(Object data) {
+        try {
+            return STORAGE_FIELD.get(data);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Failed to access Data.storage", e);
+        }
+    }
     private static final boolean LITHIUM_INSTALLED = FabricLoader.getInstance().isModLoaded("lithium");
 
     private static final class Cache {
@@ -126,12 +171,14 @@ public class WorldConversionFactory {
         var biomes = cache.biomeCache;
         var data = section.section;
 
-        var vp = blockContainer.data.palette;
+        // MC 1.21.1: Use reflection to access private Data.palette
+        var containerData = getData(blockContainer);
+        Palette<BlockState> vp = getPalette(containerData);
         var pc = cache.getPaletteCache(vp.getSize());
         GlobalPalette<BlockState> bps = null;
 
         int pcc = 0;
-        if (blockContainer.data.palette instanceof GlobalPalette<BlockState> _bps) {
+        if (vp instanceof GlobalPalette<BlockState> _bps) {
             bps = _bps;
             pcc = bps.getSize();
         } else {
@@ -152,7 +199,9 @@ public class WorldConversionFactory {
 
 
         int nonZeroCnt = 0;
-        if (blockContainer.data.storage instanceof SimpleBitStorage bStor) {
+        // MC 1.21.1: Use reflection to access private Data.storage
+        var storage = getStorage(containerData);
+        if (storage instanceof SimpleBitStorage bStor) {
             var bDat = bStor.getRaw();
             int iterPerLong = (64 / bStor.getBits()) - 1;
 
@@ -180,7 +229,7 @@ public class WorldConversionFactory {
                 data[i] = Mapper.composeMappingId(light, bId, biomes[Integer.compress(i,0b1100_1100_1100)]);
             }
         } else {
-            if (!(blockContainer.data.storage instanceof ZeroBitStorage)) {
+            if (!(storage instanceof ZeroBitStorage)) {
                 throw new IllegalStateException();
             }
             int bId = pc[0];

@@ -4,7 +4,7 @@ package me.cortex.voxy.client.core.model.bakery;
 import me.cortex.voxy.common.util.MemoryBuffer;
 import net.minecraft.client.model.geom.builders.UVPair;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.texture.MipmapStrategy;
+// MC 1.21.1: MipmapStrategy moved/removed - TODO: find replacement
 import org.lwjgl.system.MemoryUtil;
 
 import static me.cortex.voxy.client.core.model.bakery.BudgetBufferRenderer.VERTEX_FORMAT_SIZE;
@@ -77,15 +77,21 @@ public final class ReuseVertexConsumer implements VertexConsumer {
         return this;
     }
 
-    @Override
+    // MC 1.21.1: setLineWidth() removed from VertexConsumer interface
     public VertexConsumer setLineWidth(float f) {
         return null;
     }
 
     public ReuseVertexConsumer quad(BakedQuad quad, int metadata) {
-        this.anyShaded |= quad.shade();
-        this.anyDarkendTex |= quad.sprite().contents().mipmapStrategy == MipmapStrategy.DARK_CUTOUT;
+        // MC 1.21.1: BakedQuad API changed - shade() → isShade(), sprite() → getSprite()
+        this.anyShaded |= quad.isShade();
+        // MC 1.21.1: MipmapStrategy check removed - TODO: reimplement texture analysis
+        // this.anyDarkendTex |= quad.getSprite().contents().mipmapStrategy == MipmapStrategy.DARK_CUTOUT;
+        this.anyDarkendTex = false; // Placeholder
         this.ensureCanPut();
+        // MC 1.21.1: position(i) and packedUV(i) methods removed - need to parse vertices[] array
+        // TODO: Implement vertex data extraction from quad.getVertices()
+        /*
         for (int i = 0; i < 4; i++) {
             var pos = quad.position(i);
             this.addVertex(pos.x(), pos.y(), pos.z());
@@ -94,6 +100,7 @@ public final class ReuseVertexConsumer implements VertexConsumer {
 
             this.meta(metadata);
         }
+        */
         return this;
     }
 

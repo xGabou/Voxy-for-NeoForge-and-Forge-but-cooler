@@ -45,7 +45,8 @@ public class MixinRenderSectionManager {
                 system.chunkBoundRenderer.reset();
             }
         }
-        this.bottomSectionY = this.level.getMinY()>>4;
+        // MC 1.21.1: Use getMinBuildHeight() instead of getMinY()
+        this.bottomSectionY = ((net.minecraft.world.level.Level)this.level).getMinBuildHeight()>>4;
     }
 
     @Inject(method = "onChunkRemoved", at = @At("HEAD"))

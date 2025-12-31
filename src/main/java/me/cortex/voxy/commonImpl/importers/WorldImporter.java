@@ -12,6 +12,7 @@ import me.cortex.voxy.common.voxelization.WorldConversionFactory;
 import me.cortex.voxy.common.world.WorldEngine;
 import me.cortex.voxy.common.world.WorldUpdater;
 import net.minecraft.core.Holder;
+import net.minecraft.core.IdMap;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
@@ -20,12 +21,13 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.Biomes;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.DataLayer;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import net.minecraft.world.level.chunk.PalettedContainerFactory;
+import net.minecraft.world.level.chunk.PalettedContainer.Strategy;
 import net.minecraft.world.level.chunk.PalettedContainerRO;
-import net.minecraft.world.level.chunk.Strategy;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.chunk.storage.RegionFileVersion;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
@@ -89,10 +91,7 @@ public class WorldImporter implements IDataImporter {
                 return 0;
             }
 
-            @Override
-            public int bitsPerEntry() {
-                return 0;
-            }
+            // MC 1.21.1: bitsPerEntry() and copy() removed from interface - methods deleted
 
             @Override
             public boolean maybeHas(Predicate<Holder<Biome>> predicate) {
@@ -105,24 +104,20 @@ public class WorldImporter implements IDataImporter {
             }
 
             @Override
-            public PalettedContainer<Holder<Biome>> copy() {
-                return null;
-            }
-
-            @Override
             public PalettedContainer<Holder<Biome>> recreate() {
                 return null;
             }
 
             @Override
-            public PackedData<Holder<Biome>> pack(Strategy<Holder<Biome>> provider) {
+            public PackedData<Holder<Biome>> pack(IdMap<Holder<Biome>> idMap, Strategy strategy) {
                 return null;
             }
         };
 
-        var factory = PalettedContainerFactory.create(mcWorld.registryAccess());
-        this.biomeCodec = factory.biomeContainerCodec();
-        this.blockStateCodec = factory.blockStatesContainerCodec();
+        // MC 1.21.1: PalettedContainerFactory removed - need to find correct codec creation API
+        // TODO: Fix codec creation for PalettedContainer in MC 1.21.1
+        this.biomeCodec = null; // Placeholder
+        this.blockStateCodec = null; // Placeholder
     }
 
 
@@ -446,22 +441,26 @@ public class WorldImporter implements IDataImporter {
         }
 
         //Dont process non full chunk sections
-        var status = ChunkStatus.byName(chunk.getStringOr("Status", null));
+        // MC 1.21.1: CompoundTag.getStringOr() → contains() + getString()
+        var status = ChunkStatus.byName(chunk.contains("Status") ? chunk.getString("Status") : null);
         if (status != ChunkStatus.FULL && status != ChunkStatus.EMPTY) {//We also import empty since they are from data upgrade
             this.totalChunks.decrementAndGet();
             return;
         }
 
         try {
-            int x = chunk.getIntOr("xPos", Integer.MIN_VALUE);
-            int z = chunk.getIntOr("zPos", Integer.MIN_VALUE);
+            // MC 1.21.1: CompoundTag.getIntOr() → contains() + getInt()
+            int x = chunk.contains("xPos") ? chunk.getInt("xPos") : Integer.MIN_VALUE;
+            int z = chunk.contains("zPos") ? chunk.getInt("zPos") : Integer.MIN_VALUE;
             if (x>>5 != regionX || z>>5 != regionZ) {
                 Logger.error("Chunk position is not located in correct region, expected: (" + regionX + ", " + regionZ+"), got: " + "(" + (x>>5) + ", " + (z>>5)+"), importing anyway");
             }
 
-            for (var sectionE : chunk.getList("sections").orElseThrow()) {
+            // MC 1.21.1: CompoundTag.getList() returns ListTag directly (not Optional)
+            for (var sectionE : chunk.getList("sections", 10)) { // Tag type 10 = CompoundTag
                 var section = (CompoundTag) sectionE;
-                int y = section.getIntOr("Y", Integer.MIN_VALUE);
+                // MC 1.21.1: CompoundTag.getIntOr() → contains() + getInt()
+                int y = section.contains("Y") ? section.getInt("Y") : Integer.MIN_VALUE;
                 this.importSectionNBT(x, y, z, section);
             }
         } catch (Exception e) {
@@ -478,8 +477,9 @@ public class WorldImporter implements IDataImporter {
             return;
         }
 
-        byte[] blockLightData = section.getByteArray("BlockLight").orElse(EMPTY);
-        byte[] skyLightData = section.getByteArray("SkyLight").orElse(EMPTY);
+        // MC 1.21.1: CompoundTag.getByteArray() returns empty byte[] if key not found (not Optional)
+        byte[] blockLightData = section.getByteArray("BlockLight");
+        byte[] skyLightData = section.getByteArray("SkyLight");
 
         DataLayer blockLight;
         if (blockLightData.length != 0) {
@@ -495,16 +495,18 @@ public class WorldImporter implements IDataImporter {
             skyLight = null;
         }
 
-        var blockStatesRes = blockStateCodec.parse(NbtOps.INSTANCE, section.getCompound("block_states").get());
+        // MC 1.21.1: getCompound() returns CompoundTag directly, not Optional
+        var blockStatesRes = blockStateCodec.parse(NbtOps.INSTANCE, section.getCompound("block_states"));
         if (!blockStatesRes.hasResultOrPartial()) {
             //TODO: if its only partial, it means should try to upgrade the nbt format with datafixerupper probably
             return;
         }
         var blockStates = blockStatesRes.getPartialOrThrow();
         var biomes = this.defaultBiomeProvider;
-        var optBiomes = section.getCompound("biomes");
-        if (optBiomes.isPresent()) {
-            biomes = this.biomeCodec.parse(NbtOps.INSTANCE, optBiomes.get()).result().orElse(this.defaultBiomeProvider);
+        // MC 1.21.1: getCompound() returns CompoundTag directly, check if tag exists
+        if (section.contains("biomes")) {
+            var biomesTag = section.getCompound("biomes");
+            biomes = this.biomeCodec.parse(NbtOps.INSTANCE, biomesTag).result().orElse(this.defaultBiomeProvider);
         }
         VoxelizedSection csec = WorldConversionFactory.convert(
                 SECTION_CACHE.get().setPosition(x, y, z),

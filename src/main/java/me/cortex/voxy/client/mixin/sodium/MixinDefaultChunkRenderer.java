@@ -3,7 +3,8 @@ package me.cortex.voxy.client.mixin.sodium;
 import me.cortex.voxy.client.VoxyClient;
 import me.cortex.voxy.client.core.IGetVoxyRenderSystem;
 import me.cortex.voxy.client.core.rendering.Viewport;
-import me.cortex.voxy.client.core.util.IrisUtil;
+// MC 1.21.1 NeoForge: Iris shader integration excluded
+// import me.cortex.voxy.client.core.util.IrisUtil;
 import me.cortex.voxy.commonImpl.VoxyCommon;
 import net.caffeinemc.mods.sodium.client.gl.device.CommandList;
 import net.caffeinemc.mods.sodium.client.gl.device.RenderDevice;
@@ -50,7 +51,8 @@ public abstract class MixinDefaultChunkRenderer extends ShaderChunkRenderer {
             var renderer = ((IGetVoxyRenderSystem) Minecraft.getInstance().levelRenderer).getVoxyRenderSystem();
             if (renderer != null) {
                 Viewport<?> viewport = null;
-                if (IrisUtil.irisShaderPackEnabled()) {
+                // MC 1.21.1 NeoForge: Iris shader integration excluded - irisShaderPackEnabled() returns false
+                if (false) {
                     viewport = renderer.getViewport();
                 } else {
                     // Sodium 0.6.x: setupViewport no longer takes FogParameters

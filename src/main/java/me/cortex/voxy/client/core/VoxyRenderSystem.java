@@ -14,7 +14,8 @@ import me.cortex.voxy.client.core.model.ModelStore;
 import me.cortex.voxy.client.core.rendering.ChunkBoundRenderer;
 import me.cortex.voxy.client.core.rendering.RenderDistanceTracker;
 import me.cortex.voxy.client.core.rendering.Viewport;
-import me.cortex.voxy.client.core.rendering.ViewportSelector;
+// MC 1.21.1 NeoForge: Vivecraft VR integration excluded
+// import me.cortex.voxy.client.core.rendering.ViewportSelector;
 import me.cortex.voxy.client.core.rendering.building.RenderGenerationService;
 import me.cortex.voxy.client.core.rendering.hierachical.AsyncNodeManager;
 import me.cortex.voxy.client.core.rendering.hierachical.HierarchicalOcclusionTraverser;
@@ -28,7 +29,8 @@ import me.cortex.voxy.client.core.rendering.util.DownloadStream;
 import me.cortex.voxy.client.core.rendering.util.PrintfDebugUtil;
 import me.cortex.voxy.client.core.rendering.util.UploadStream;
 import me.cortex.voxy.client.core.util.GPUTiming;
-import me.cortex.voxy.client.core.util.IrisUtil;
+// MC 1.21.1 NeoForge: Iris shader integration excluded
+// import me.cortex.voxy.client.core.util.IrisUtil;
 import me.cortex.voxy.common.Logger;
 import me.cortex.voxy.common.thread.ServiceManager;
 import me.cortex.voxy.common.world.WorldEngine;
@@ -67,7 +69,8 @@ public class VoxyRenderSystem {
     private final RenderDistanceTracker renderDistanceTracker;
     public final ChunkBoundRenderer chunkBoundRenderer;
 
-    private final ViewportSelector<?> viewportSelector;
+    // MC 1.21.1 NeoForge: Vivecraft VR integration excluded
+    // private final ViewportSelector<?> viewportSelector;
 
     private final AbstractRenderPipeline pipeline;
 
@@ -124,11 +127,14 @@ public class VoxyRenderSystem {
             this.pipeline.setupExtraModelBakeryData(this.modelService);//Configure the model service
             var sectionRenderer = backendFactory.create(this.pipeline, this.modelService.getStore(), this.geometryData);
             this.pipeline.setSectionRenderer(sectionRenderer);
-            this.viewportSelector = new ViewportSelector<>(sectionRenderer::createViewport);
+            // MC 1.21.1 NeoForge: Vivecraft VR integration excluded
+            // this.viewportSelector = new ViewportSelector<>(sectionRenderer::createViewport);
 
             {
-                int minSec = Minecraft.getInstance().level.getMinSectionY() >> 5;
-                int maxSec = (Minecraft.getInstance().level.getMaxSectionY() - 1) >> 5;
+                // MC 1.21.1: Use getMinSection()/getMaxSection() instead of getMinSectionY()/getMaxSectionY()
+                var level = (net.minecraft.world.level.Level)Minecraft.getInstance().level;
+                int minSec = level.getMinSection() >> 5;
+                int maxSec = (level.getMaxSection() - 1) >> 5;
 
                 //Do some very cheeky stuff for MiB
                 if (VoxyCommon.IS_MINE_IN_ABYSS) {//TODO: make this somehow configurable
@@ -253,7 +259,8 @@ public class VoxyRenderSystem {
         this.pipeline.preSetup(viewport);
 
         TimingStatistics.E.start();
-        if ((!VoxyClient.disableSodiumChunkRender())&&!IrisUtil.irisShadowActive()) {
+        // MC 1.21.1 NeoForge: Iris shader integration excluded - irisShadowActive() returns false (no Iris shadows)
+        if ((!VoxyClient.disableSodiumChunkRender())&&!false) {
             this.chunkBoundRenderer.render(viewport);
         } else {
             viewport.depthBoundingBuffer.clear(0);
@@ -304,7 +311,8 @@ public class VoxyRenderSystem {
                 glBindSampler(i, 0);
             }
 
-            IrisUtil.clearIrisSamplers();//Thanks iris (sigh)
+            // MC 1.21.1 NeoForge: Iris shader integration excluded - clearIrisSamplers() is a no-op
+            // IrisUtil.clearIrisSamplers();//Thanks iris (sigh)
 
             //TODO: should/needto actually restore all of these, not just clear them
             //Clear all the bindings
@@ -373,7 +381,9 @@ public class VoxyRenderSystem {
         var client = Minecraft.getInstance();
         var gameRenderer = client.gameRenderer;//tickCounter.getTickDelta(true);
 
-        float fov = gameRenderer.getFov(gameRenderer.getMainCamera(), client.getDeltaTracker().getGameTimeDeltaPartialTick(true), true);
+        // MC 1.21.1: getFov() became private, using options FOV value as fallback
+        // TODO: Consider using ViewportEvent.ComputeFov for accurate FOV with modifiers
+        float fov = client.options.fov().get().floatValue();
 
         projection.setPerspective(fov * 0.01745329238474369f,
                 (float) client.getWindow().getWidth() / (float)client.getWindow().getHeight(),
@@ -413,10 +423,12 @@ public class VoxyRenderSystem {
     }
 
     public Viewport<?> getViewport() {
-        if (IrisUtil.irisShadowActive()) {
+        // MC 1.21.1 NeoForge: Iris/Vivecraft integrations excluded - irisShadowActive() returns false, viewportSelector disabled
+        // TODO: Re-implement viewport selection without Vivecraft dependency
+        if (false) {
             return null;
         }
-        return this.viewportSelector.getViewport();
+        return null; // this.viewportSelector.getViewport();
     }
 
 
@@ -461,7 +473,8 @@ public class VoxyRenderSystem {
             this.geometryData.free();
             this.chunkBoundRenderer.free();
 
-            this.viewportSelector.free();
+            // MC 1.21.1 NeoForge: Vivecraft VR integration excluded
+            // this.viewportSelector.free();
         } catch (Exception e) {Logger.error("Error shutting down renderer components", e);}
         Logger.info("Shutting down render pipeline");
         try {this.pipeline.free();} catch (Exception e){Logger.error("Error releasing render pipeline", e);}

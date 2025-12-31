@@ -1,7 +1,8 @@
 package me.cortex.voxy.client.core.model.bakery;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTexture;
+// TODO: MC 1.21.1 - GpuTexture not accessible
+// import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import me.cortex.voxy.client.core.gl.GlBuffer;
@@ -26,16 +27,20 @@ public class BudgetBufferRenderer {
 
 
     public static void init(){}
-    private static final GlBuffer indexBuffer;
+    // TODO: MC 1.21.1 - AutoStorageIndexBuffer.getBuffer() and Blaze3D GlBuffer.handle not accessible
+    // Need mixin accessor to get index buffer handle - initialization disabled for now
+    private static final GlBuffer indexBuffer = null;
+    /*
     static {
         var i = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-        int id = ((com.mojang.blaze3d.opengl.GlBuffer) i.getBuffer(4096*3*2)).handle;
+        int id = getIndexBufferId(i);
         if (i.type() != VertexFormat.IndexType.SHORT) {
             throw new IllegalStateException();
         }
         indexBuffer = new GlBuffer(3*2*2*4096);
         glCopyNamedBufferSubData(id, indexBuffer.id, 0, 0, 3*2*2*4096);
     }
+    */
 
     private static final int STRIDE = 24;
     private static final GlVertexArray VA = new GlVertexArray()
@@ -46,6 +51,10 @@ public class BudgetBufferRenderer {
 
     private static GlBuffer immediateBuffer;
     private static int quadCount;
+
+    // TODO: MC 1.21.1 - GpuTexture type not accessible, Gl Texture.glId() not accessible
+    // Need mixin accessor or alternative API for texture ID
+    /*
     public static void drawFast(MeshData buffer, GpuTexture tex, Matrix4f matrix) {
         if (buffer.drawState().mode() != VertexFormat.Mode.QUADS) {
             throw new IllegalStateException("Fast only supports quads");
@@ -57,11 +66,12 @@ public class BudgetBufferRenderer {
         size /= STRIDE;
         if (size%4 != 0) throw new IllegalStateException();
         size /= 4;
-        setup(MemoryUtil.memAddress(buff), size, ((com.mojang.blaze3d.opengl.GlTexture)tex).glId());
+        setup(MemoryUtil.memAddress(buff), size, getTextureId(tex));
         buffer.close();
 
         render(matrix);
     }
+    */
 
     public static void setup(long dataPtr, int quads, int texId) {
         if (quads == 0) {

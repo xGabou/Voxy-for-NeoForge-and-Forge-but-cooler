@@ -30,10 +30,9 @@ public class ModelStore {
         this.textures = new GlTexture().store(GL_RGBA8, Integer.numberOfTrailingZeros(ModelFactory.MODEL_TEXTURE_SIZE), ModelFactory.MODEL_TEXTURE_SIZE*3*256,ModelFactory.MODEL_TEXTURE_SIZE*2*256).name("ModelTextures");
 
 
-        //Limit the mips of the texture to match that of the terrain atlas
-        int mipLvl = ((TextureAtlas) Minecraft.getInstance().getTextureManager()
-                .getTexture(ResourceLocation.fromNamespaceAndPath("minecraft", "textures/atlas/blocks.png")))
-                .maxMipLevel;
+        // MC 1.21.1: TextureAtlas.maxMipLevel is now private, using default value
+        // TODO: Consider using reflection or NeoForge events to get actual mip level
+        int mipLvl = 4; // Default mipmap level for Minecraft terrain atlas
 
         glSamplerParameteri(this.blockSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
         glSamplerParameteri(this.blockSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
