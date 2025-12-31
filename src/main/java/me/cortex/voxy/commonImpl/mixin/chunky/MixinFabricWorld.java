@@ -1,5 +1,8 @@
 package me.cortex.voxy.commonImpl.mixin.chunky;
 
+// TODO: Re-enable Chunky integration when NeoForge 1.21.1 version available
+// Disabled for NeoForge port - Chunky integration temporarily removed
+/*
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import me.cortex.voxy.common.world.service.VoxelIngestService;
@@ -33,3 +36,4 @@ public class MixinFabricWorld {
         }
     }
 }
+*/

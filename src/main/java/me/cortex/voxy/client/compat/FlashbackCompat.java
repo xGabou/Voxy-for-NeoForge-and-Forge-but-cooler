@@ -1,8 +1,9 @@
 package me.cortex.voxy.client.compat;
 
-import com.moulberry.flashback.Flashback;
-import com.moulberry.flashback.playback.ReplayServer;
-import com.moulberry.flashback.record.FlashbackMeta;
+// TODO: Re-enable Flashback integration when NeoForge 1.21.1 version available
+// import com.moulberry.flashback.Flashback;
+// import com.moulberry.flashback.playback.ReplayServer;
+// import com.moulberry.flashback.record.FlashbackMeta;
 import me.cortex.voxy.common.Logger;
 import me.cortex.voxy.common.config.section.SectionStorageConfig;
 import net.fabricmc.loader.api.FabricLoader;
@@ -10,15 +11,21 @@ import net.fabricmc.loader.api.FabricLoader;
 import java.nio.file.Path;
 
 public class FlashbackCompat {
-    public static final boolean FLASHBACK_INSTALLED = FabricLoader.getInstance().isModLoaded("flashback");
+    // Disabled for NeoForge 1.21.1 port - Flashback not available
+    public static final boolean FLASHBACK_INSTALLED = false; // FabricLoader.getInstance().isModLoaded("flashback");
 
     public static Path getReplayStoragePath() {
+        // Stubbed out - Flashback integration disabled for NeoForge port
+        return null;
+        /*
         if (!FLASHBACK_INSTALLED) {
             return null;
         }
         return getReplayStoragePath0();
+        */
     }
 
+    /*
     private static Path getReplayStoragePath0() {
         ReplayServer replayServer = Flashback.getReplayServer();
         if (replayServer != null) {
@@ -38,4 +45,5 @@ public class FlashbackCompat {
         }
         return null;
     }
+    */
 }

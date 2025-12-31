@@ -4,10 +4,11 @@ import me.cortex.voxy.client.core.rendering.hierachical.AsyncNodeManager;
 import me.cortex.voxy.client.core.rendering.hierachical.HierarchicalOcclusionTraverser;
 import me.cortex.voxy.client.core.rendering.hierachical.NodeCleaner;
 import me.cortex.voxy.client.core.util.IrisUtil;
-import me.cortex.voxy.client.iris.IGetIrisVoxyPipelineData;
+// TODO: Re-enable Iris integration when NeoForge 1.21.1 version available
+// import me.cortex.voxy.client.iris.IGetIrisVoxyPipelineData;
 import me.cortex.voxy.common.Logger;
-import net.irisshaders.iris.Iris;
-import net.irisshaders.iris.api.v0.IrisApi;
+// import net.irisshaders.iris.Iris;
+// import net.irisshaders.iris.api.v0.IrisApi;
 
 import java.util.function.BooleanSupplier;
 
@@ -25,6 +26,9 @@ public class RenderPipelineFactory {
     }
 
     private static AbstractRenderPipeline createIrisPipeline(AsyncNodeManager nodeManager, NodeCleaner nodeCleaner, HierarchicalOcclusionTraverser traversal, BooleanSupplier frexSupplier) {
+        // Stubbed out - Iris integration disabled for NeoForge port
+        return null;
+        /*
         var irisPipe = Iris.getPipelineManager().getPipelineNullable();
         if (irisPipe == null) {
             return null;
@@ -44,5 +48,6 @@ public class RenderPipelineFactory {
             }
         }
         return null;
+        */
     }
 }
