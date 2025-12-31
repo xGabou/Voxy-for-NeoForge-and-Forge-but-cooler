@@ -12,13 +12,14 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.debug.DebugScreenDisplayer;
-import net.minecraft.client.gui.components.debug.DebugScreenEntries;
-import net.minecraft.client.gui.components.debug.DebugScreenEntry;
+// TODO: Debug screen API changed in MC 1.21.1 - disabled for now
+// import net.minecraft.client.gui.components.debug.DebugScreenDisplayer;
+// import net.minecraft.client.gui.components.debug.DebugScreenEntries;
+// import net.minecraft.client.gui.components.debug.DebugScreenEntry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
-import org.jspecify.annotations.Nullable;
+// import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.function.Consumer;
@@ -53,9 +54,11 @@ public class VoxyClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // TODO: Debug screen API changed in MC 1.21.1 - disabled for now
+        /*
         DebugScreenEntries.register(ResourceLocation.fromNamespaceAndPath("voxy", "version"), new DebugScreenEntry() {
             @Override
-            public void display(DebugScreenDisplayer lines, @Nullable Level level, @Nullable LevelChunk levelChunk, @Nullable LevelChunk levelChunk2) {
+            public void display(DebugScreenDisplayer lines, Level level, LevelChunk levelChunk, LevelChunk levelChunk2) {
                 if (!VoxyCommon.isAvailable()) {
                     lines.addLine(ChatFormatting.RED + "voxy-"+VoxyCommon.MOD_VERSION);//Voxy installed, not avalible
                     return;
@@ -75,6 +78,7 @@ public class VoxyClient implements ClientModInitializer {
         });
 
         DebugScreenEntries.register(ResourceLocation.fromNamespaceAndPath("voxy","debug"), new VoxyDebugScreenEntry());
+        */
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             if (VoxyCommon.isAvailable()) {
                 dispatcher.register(VoxyCommands.register());
