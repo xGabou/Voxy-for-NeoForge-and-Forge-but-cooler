@@ -186,6 +186,13 @@ dependencies {
     // Lithium for NeoForge (0.15.1 - latest for MC 1.21.1)
     implementation("maven.modrinth:lithium:mc1.21.1-0.15.1-neoforge")
 
+    // SodiumOptionsAPI for Video Settings integration
+    // Provides event API to add custom pages to Sodium's options GUI
+    compileOnly("maven.modrinth:sodium-options-api:neoforge-1.21.1-1.0.10")
+
+    // Reese's Sodium Options - required by SodiumOptionsAPI
+    compileOnly("maven.modrinth:reeses-sodium-options:mc1.21.3-1.8.0+neoforge")
+
     // Optional mod dependencies - commented out for initial port
     // TODO: Add NeoForge versions when available
     //compileOnly "drouarb:nvidium:0.4.1-beta4:1.21.6@jar"

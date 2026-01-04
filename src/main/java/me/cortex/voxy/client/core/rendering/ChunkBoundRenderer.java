@@ -3,6 +3,7 @@ package me.cortex.voxy.client.core.rendering;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import me.cortex.voxy.client.config.VoxyConfig;
 import me.cortex.voxy.client.core.AbstractRenderPipeline;
 import me.cortex.voxy.client.core.gl.GlBuffer;
 import me.cortex.voxy.client.core.gl.GlVertexArray;
@@ -139,6 +140,9 @@ public class ChunkBoundRenderer {
             negInnerSec.getToAddress(ptr); ptr += 4*3;
             viewport.MVP.translate(negInnerSec.negate(), new Matrix4f()).getToAddress(matPtr);
             MemoryUtil.memPutFloat(ptr, renderDistance); ptr += 4;
+
+            // LOD boundary buffer - configurable overlap to prevent pop-in
+            MemoryUtil.memPutInt(ptr, VoxyConfig.CONFIG.lodBoundaryBuffer); ptr += 4;
         }
         UploadStream.INSTANCE.commit();
 
