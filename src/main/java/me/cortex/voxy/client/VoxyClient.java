@@ -7,9 +7,6 @@ import me.cortex.voxy.client.core.model.bakery.BudgetBufferRenderer;
 import me.cortex.voxy.client.core.rendering.util.SharedIndexBuffer;
 import me.cortex.voxy.common.Logger;
 import me.cortex.voxy.commonImpl.VoxyCommon;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 // TODO: Debug screen API changed in MC 1.21.1 - disabled for now
@@ -19,13 +16,21 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
-// import org.jspecify.annotations.Nullable;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 
 import java.util.HashSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class VoxyClient implements ClientModInitializer {
+/**
+ * Client initialization for Voxy on NeoForge.
+ * Uses NeoForge event bus for command registration.
+ */
+@EventBusSubscriber(modid = "voxy", value = Dist.CLIENT)
+public class VoxyClient {
     private static final HashSet<String> FREX = new HashSet<>();
 
     public static void initVoxyClient() {
@@ -52,47 +57,19 @@ public class VoxyClient implements ClientModInitializer {
         }
     }
 
-    @Override
-    public void onInitializeClient() {
-        // TODO: Debug screen API changed in MC 1.21.1 - disabled for now
-        /*
-        DebugScreenEntries.register(ResourceLocation.fromNamespaceAndPath("voxy", "version"), new DebugScreenEntry() {
-            @Override
-            public void display(DebugScreenDisplayer lines, Level level, LevelChunk levelChunk, LevelChunk levelChunk2) {
-                if (!VoxyCommon.isAvailable()) {
-                    lines.addLine(ChatFormatting.RED + "voxy-"+VoxyCommon.MOD_VERSION);//Voxy installed, not avalible
-                    return;
-                }
-                var instance = VoxyCommon.getInstance();
-                if (instance == null) {
-                    lines.addLine(ChatFormatting.YELLOW + "voxy-" + VoxyCommon.MOD_VERSION);//Voxy avalible, no instance active
-                    return;
-                }
-                VoxyRenderSystem vrs = null;
-                var wr = Minecraft.getInstance().levelRenderer;
-                if (wr != null) vrs = ((IGetVoxyRenderSystem) wr).getVoxyRenderSystem();
-
-                //Voxy instance active
-                lines.addLine((vrs==null?ChatFormatting.DARK_GREEN:ChatFormatting.GREEN)+"voxy-"+VoxyCommon.MOD_VERSION);
-            }
-        });
-
-        DebugScreenEntries.register(ResourceLocation.fromNamespaceAndPath("voxy","debug"), new VoxyDebugScreenEntry());
-        */
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-            if (VoxyCommon.isAvailable()) {
-                dispatcher.register(VoxyCommands.register());
-            }
-        });
-
-        FabricLoader.getInstance()
-                .getEntrypoints("frex_flawless_frames", Consumer.class)
-                .forEach(api -> ((Consumer<Function<String,Consumer<Boolean>>>)api).accept(name->active->{if (active) {
-                    FREX.add(name);
-                } else {
-                    FREX.remove(name);
-                }}));
+    /**
+     * NeoForge event handler for client command registration.
+     * Replaces Fabric's ClientCommandRegistrationCallback.
+     */
+    @SubscribeEvent
+    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+        if (VoxyCommon.isAvailable()) {
+            event.getDispatcher().register(VoxyCommands.register());
+        }
     }
+
+    // Note: FREX flawless frames integration disabled on NeoForge
+    // (Fabric-specific entrypoint mechanism not available)
 
     public static boolean isFrexActive() {
         return !FREX.isEmpty();

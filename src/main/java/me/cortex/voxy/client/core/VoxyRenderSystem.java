@@ -14,8 +14,7 @@ import me.cortex.voxy.client.core.model.ModelStore;
 import me.cortex.voxy.client.core.rendering.ChunkBoundRenderer;
 import me.cortex.voxy.client.core.rendering.RenderDistanceTracker;
 import me.cortex.voxy.client.core.rendering.Viewport;
-// MC 1.21.1 NeoForge: Vivecraft VR integration excluded
-// import me.cortex.voxy.client.core.rendering.ViewportSelector;
+import me.cortex.voxy.client.core.rendering.ViewportSelector;
 import me.cortex.voxy.client.core.rendering.building.RenderGenerationService;
 import me.cortex.voxy.client.core.rendering.hierachical.AsyncNodeManager;
 import me.cortex.voxy.client.core.rendering.hierachical.HierarchicalOcclusionTraverser;
@@ -69,8 +68,7 @@ public class VoxyRenderSystem {
     private final RenderDistanceTracker renderDistanceTracker;
     public final ChunkBoundRenderer chunkBoundRenderer;
 
-    // MC 1.21.1 NeoForge: Vivecraft VR integration excluded
-    // private final ViewportSelector<?> viewportSelector;
+    private final ViewportSelector<?> viewportSelector;
 
     private final AbstractRenderPipeline pipeline;
 
@@ -127,8 +125,7 @@ public class VoxyRenderSystem {
             this.pipeline.setupExtraModelBakeryData(this.modelService);//Configure the model service
             var sectionRenderer = backendFactory.create(this.pipeline, this.modelService.getStore(), this.geometryData);
             this.pipeline.setSectionRenderer(sectionRenderer);
-            // MC 1.21.1 NeoForge: Vivecraft VR integration excluded
-            // this.viewportSelector = new ViewportSelector<>(sectionRenderer::createViewport);
+            this.viewportSelector = new ViewportSelector<>(sectionRenderer::createViewport);
 
             {
                 // MC 1.21.1: Use getMinSection()/getMaxSection() instead of getMinSectionY()/getMaxSectionY()
@@ -423,12 +420,9 @@ public class VoxyRenderSystem {
     }
 
     public Viewport<?> getViewport() {
-        // MC 1.21.1 NeoForge: Iris/Vivecraft integrations excluded - irisShadowActive() returns false, viewportSelector disabled
-        // TODO: Re-implement viewport selection without Vivecraft dependency
-        if (false) {
-            return null;
-        }
-        return null; // this.viewportSelector.getViewport();
+        // MC 1.21.1 NeoForge: Iris shadow integration disabled - Oculus (NeoForge Iris port) not yet supported
+        // TODO: Add Oculus shadow detection when available
+        return this.viewportSelector.getViewport();
     }
 
 
@@ -473,8 +467,7 @@ public class VoxyRenderSystem {
             this.geometryData.free();
             this.chunkBoundRenderer.free();
 
-            // MC 1.21.1 NeoForge: Vivecraft VR integration excluded
-            // this.viewportSelector.free();
+            this.viewportSelector.free();
         } catch (Exception e) {Logger.error("Error shutting down renderer components", e);}
         Logger.info("Shutting down render pipeline");
         try {this.pipeline.free();} catch (Exception e){Logger.error("Error releasing render pipeline", e);}

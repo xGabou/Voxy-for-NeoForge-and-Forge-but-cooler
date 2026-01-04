@@ -5,3 +5,12 @@
 /run/
 /out/
 /logs/
+
+# Reference dependency clones for development
+/.reference/
+
+# Agent orchestration task files
+/.agent/
+
+# macOS metadata
+.DS_Store

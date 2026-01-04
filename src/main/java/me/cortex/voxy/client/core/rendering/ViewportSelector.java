@@ -1,17 +1,19 @@
 package me.cortex.voxy.client.core.rendering;
 
-import me.cortex.voxy.client.core.util.IrisUtil;
-import net.fabricmc.loader.api.FabricLoader;
-import org.vivecraft.api.client.VRRenderingAPI;
+// MC 1.21.1 NeoForge: Iris/Vivecraft integrations excluded - not available on NeoForge
+// import me.cortex.voxy.client.core.util.IrisUtil;
+// import net.fabricmc.loader.api.FabricLoader;
+// import org.vivecraft.api.client.VRRenderingAPI;
+// import static org.vivecraft.api.client.data.RenderPass.VANILLA;
+import net.neoforged.fml.ModList;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static org.vivecraft.api.client.data.RenderPass.VANILLA;
-
 public class ViewportSelector <T extends Viewport<?>> {
-    public static final boolean VIVECRAFT_INSTALLED = FabricLoader.getInstance().isModLoaded("vivecraft");
+    // MC 1.21.1 NeoForge: Vivecraft not available - always false
+    public static final boolean VIVECRAFT_INSTALLED = ModList.get() != null && ModList.get().isLoaded("vivecraft");
 
     private final Supplier<T> creator;
     private final T defaultViewport;
@@ -26,29 +28,21 @@ public class ViewportSelector <T extends Viewport<?>> {
         return this.extraViewports.computeIfAbsent(holder, a->this.creator.get());
     }
 
-    private T getVivecraftViewport() {
-        var pass = VRRenderingAPI.instance().getCurrentRenderPass();
-        if (pass == null || pass == VANILLA) {
-            return null;
-        }
-        return this.getOrCreate(pass);
-    }
+    // MC 1.21.1 NeoForge: Vivecraft VR rendering not available
+    // private T getVivecraftViewport() {
+    //     var pass = VRRenderingAPI.instance().getCurrentRenderPass();
+    //     if (pass == null || pass == VANILLA) {
+    //         return null;
+    //     }
+    //     return this.getOrCreate(pass);
+    // }
 
     private static final Object IRIS_SHADOW_OBJECT = new Object();
     public T getViewport() {
-        T viewport = null;
-        if (viewport == null && VIVECRAFT_INSTALLED) {
-            viewport = getVivecraftViewport();
-        }
-
-        if (viewport == null && IrisUtil.irisShadowActive()) {
-            viewport = this.getOrCreate(IRIS_SHADOW_OBJECT);
-        }
-
-        if (viewport == null) {
-            viewport = this.defaultViewport;
-        }
-        return viewport;
+        // MC 1.21.1 NeoForge: Simplified viewport selection
+        // Vivecraft and Iris integrations disabled - return default viewport
+        // TODO: Re-enable Iris shadow viewport when Oculus (NeoForge Iris port) support added
+        return this.defaultViewport;
     }
 
     public void free() {

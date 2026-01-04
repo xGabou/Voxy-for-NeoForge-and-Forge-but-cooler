@@ -4,8 +4,8 @@ import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import me.cortex.voxy.common.world.other.Mapper;
 import me.cortex.voxy.common.world.other.Mipper;
 import net.caffeinemc.mods.lithium.common.world.chunk.LithiumHashPalette;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.Holder;
+import net.neoforged.fml.ModList;
 import net.minecraft.util.SimpleBitStorage;
 import net.minecraft.util.ZeroBitStorage;
 import net.minecraft.world.level.biome.Biome;
@@ -65,7 +65,7 @@ public class WorldConversionFactory {
             throw new RuntimeException("Failed to access Data.storage", e);
         }
     }
-    private static final boolean LITHIUM_INSTALLED = FabricLoader.getInstance().isModLoaded("lithium");
+    private static final boolean LITHIUM_INSTALLED = ModList.get().isLoaded("lithium");
 
     private static final class Cache {
         private final int[] biomeCache = new int[4*4*4];

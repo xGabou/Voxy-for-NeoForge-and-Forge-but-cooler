@@ -41,10 +41,10 @@ public abstract class MixinClientLevel {
             Holder<DimensionType> dimensionType,
             int loadDistance,
             int simulationDistance,
+            java.util.function.Supplier<net.minecraft.util.profiling.ProfilerFiller> profiler,
             LevelRenderer worldRenderer,
             boolean debugWorld,
-            long seed,
-            int seaLevel,
+            long biomeZoomSeed,
             CallbackInfo cir) {
         // MC 1.21.1: Use getMinBuildHeight() instead of getMinY()
         this.bottomSectionY = ((Level)(Object)this).getMinBuildHeight()>>4;

@@ -27,20 +27,23 @@ public class BudgetBufferRenderer {
 
 
     public static void init(){}
-    // TODO: MC 1.21.1 - AutoStorageIndexBuffer.getBuffer() and Blaze3D GlBuffer.handle not accessible
-    // Need mixin accessor to get index buffer handle - initialization disabled for now
-    private static final GlBuffer indexBuffer = null;
-    /*
+
+    // MC 1.21.1: AutoStorageIndexBuffer.name field accessed via Access Transformer
+    // Upstream used: ((com.mojang.blaze3d.opengl.GlBuffer) i.getBuffer(...)).handle
+    // MC 1.21.1: GlBuffer class removed, use AutoStorageIndexBuffer.name instead
+    private static final GlBuffer indexBuffer;
     static {
         var i = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-        int id = getIndexBufferId(i);
+        // Ensure the buffer is initialized by binding it first
+        i.bind(4096 * 3 * 2);
+        // Access the GL buffer ID via AT (AutoStorageIndexBuffer.name)
+        int id = i.name;
         if (i.type() != VertexFormat.IndexType.SHORT) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Expected SHORT index type for quad buffer");
         }
         indexBuffer = new GlBuffer(3*2*2*4096);
         glCopyNamedBufferSubData(id, indexBuffer.id, 0, 0, 3*2*2*4096);
     }
-    */
 
     private static final int STRIDE = 24;
     private static final GlVertexArray VA = new GlVertexArray()

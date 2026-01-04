@@ -6,7 +6,8 @@ package me.cortex.voxy.client.compat;
 // import com.moulberry.flashback.record.FlashbackMeta;
 import me.cortex.voxy.common.Logger;
 import me.cortex.voxy.common.config.section.SectionStorageConfig;
-import net.fabricmc.loader.api.FabricLoader;
+// NeoForge: FabricLoader replaced with ModList (unused - Flashback integration disabled)
+// import net.neoforged.fml.ModList;
 
 import java.nio.file.Path;
 

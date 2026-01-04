@@ -1,6 +1,7 @@
 package me.cortex.voxy.client.core.rendering;
 
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import me.cortex.voxy.client.core.AbstractRenderPipeline;
 import me.cortex.voxy.client.core.gl.GlBuffer;
@@ -41,10 +42,22 @@ public class ChunkBoundRenderer {
     private final LongOpenHashSet addQueue = new LongOpenHashSet();
     private final LongOpenHashSet remQueue = new LongOpenHashSet();
 
+    // Delayed removal to prevent pop-out when chunks unload
+    // Each entry is processed after REMOVAL_DELAY_FRAMES frames
+    // 12 frames @ 60fps = ~200ms delay for LOD system to prepare
+    private static final int REMOVAL_DELAY_FRAMES = 12;
+    private final LongArrayList[] delayedRemovalQueue = new LongArrayList[REMOVAL_DELAY_FRAMES];
+    private int delayQueueIndex = 0;
+
     private final AbstractRenderPipeline pipeline;
     public ChunkBoundRenderer(AbstractRenderPipeline pipeline) {
         this.chunk2idx.defaultReturnValue(-1);
         this.pipeline = pipeline;
+
+        // Initialize delayed removal queues
+        for (int i = 0; i < REMOVAL_DELAY_FRAMES; i++) {
+            this.delayedRemovalQueue[i] = new LongArrayList();
+        }
 
         String vert = ShaderLoader.parse("voxy:chunkoutline/outline.vsh");
         String taa = pipeline.taaFunction("getTAA");
@@ -61,6 +74,12 @@ public class ChunkBoundRenderer {
     }
 
     public void addSection(long pos) {
+        // First check if it's pending removal in any delay queue
+        for (LongArrayList queue : this.delayedRemovalQueue) {
+            if (queue.rem(pos)) {
+                return; // Was pending removal, now cancelled
+            }
+        }
         if (!this.remQueue.remove(pos)) {
             this.addQueue.add(pos);
         }
@@ -68,12 +87,25 @@ public class ChunkBoundRenderer {
 
     public void removeSection(long pos) {
         if (!this.addQueue.remove(pos)) {
-            this.remQueue.add(pos);
+            // Add to delayed removal queue instead of immediate removal
+            // This gives LOD system time to prepare before chunk bounds disappear
+            this.delayedRemovalQueue[this.delayQueueIndex].add(pos);
         }
     }
 
     //Bind and render, changing as little gl state as possible so that the caller may configure how it wants to render
     public void render(Viewport<?> viewport) {
+        // Process delayed removals - rotate to next slot and move oldest entries to remQueue
+        int oldestSlot = (this.delayQueueIndex + 1) % REMOVAL_DELAY_FRAMES;
+        LongArrayList oldestQueue = this.delayedRemovalQueue[oldestSlot];
+        if (!oldestQueue.isEmpty()) {
+            for (int i = 0; i < oldestQueue.size(); i++) {
+                this.remQueue.add(oldestQueue.getLong(i));
+            }
+            oldestQueue.clear();
+        }
+        this.delayQueueIndex = oldestSlot;
+
         if (!this.remQueue.isEmpty()) {
             boolean wasEmpty = this.chunk2idx.isEmpty();
             this.remQueue.forEach(this::_remPos);//TODO: REPLACE WITH SCATTER COMPUTE
@@ -222,6 +254,11 @@ public class ChunkBoundRenderer {
 
     public void reset() {
         this.chunk2idx.clear();
+        this.remQueue.clear();
+        this.addQueue.clear();
+        for (LongArrayList queue : this.delayedRemovalQueue) {
+            queue.clear();
+        }
     }
 
     public void free() {

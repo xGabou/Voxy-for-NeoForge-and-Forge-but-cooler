@@ -14,6 +14,8 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.util.datafix.DataFixers;
 import net.minecraft.util.datafix.fixes.References;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -358,9 +360,9 @@ public class Mapper {
             if (state.getBlock() instanceof LeavesBlock) {
                 this.opacity = 15;
             } else {
-                // MC 1.21.1: getLightBlock() now requires (BlockGetter, BlockPos) parameters
-                // Using null values as this is called without world context
-                this.opacity = state.getLightBlock(null, null);
+                // MC 1.21.1: getLightBlock() requires (BlockGetter, BlockPos) parameters
+                // Use EmptyBlockGetter.INSTANCE and BlockPos.ZERO (same as vanilla's BlockBehaviour.Cache)
+                this.opacity = state.getLightBlock(EmptyBlockGetter.INSTANCE, BlockPos.ZERO);
             }
         }
 

@@ -101,9 +101,8 @@ public class Capabilities {
 
         if (this.compute&&this.isAmd) {
             this.hasBrokenDepthSampler = testDepthSampler();
-            if (this.hasBrokenDepthSampler) {
-                throw new IllegalStateException("it bork, amd is bork");
-            }
+            // Boolean flag is sufficient for graceful degradation in VoxyClient.initVoxyClient()
+            // Throwing exception here bypasses the graceful error handling
         } else {
             this.hasBrokenDepthSampler = false;
         }
