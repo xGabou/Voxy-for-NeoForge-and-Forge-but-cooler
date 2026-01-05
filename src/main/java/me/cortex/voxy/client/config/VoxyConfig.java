@@ -37,6 +37,14 @@ public class VoxyConfig {
     // Range: 0-4 blocks, default 1 (original Voxy behavior)
     public int lodBoundaryBuffer = 1;
 
+    // World curvature: simulates standing on a spherical planet
+    // 0 = disabled (flat world)
+    // 1 = real Earth curvature (6371km radius)
+    // Higher values = more extreme curvature (smaller planet effect)
+    // Range: 0, or 50-5000 (values 1-49 are invalid and auto-corrected to 50)
+    // Inspired by Distant Horizons' earth curvature feature
+    public int earthCurveRatio = 0;
+
     private static VoxyConfig loadOrCreate() {
         if (VoxyCommon.isAvailable()) {
             var path = getConfigPath();

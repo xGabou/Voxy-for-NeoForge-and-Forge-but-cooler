@@ -162,9 +162,39 @@ void setupQuad(out QuadData quad, const in Quad rawQuad, uvec2 sPos, bool genera
     quad.uvCorner = faceSize.xz;
 }
 
+// Apply spherical world curvature effect (inspired by Distant Horizons)
+// Makes distant terrain curve downward as if standing on a spherical planet
+vec3 applyWorldCurvature(vec3 worldPos) {
+    if (uEarthRadius <= 0.0) {
+        return worldPos;
+    }
+
+    // Calculate local radius at vertex height
+    float localRadius = uEarthRadius + worldPos.y;
+
+    // Calculate the arc angle based on horizontal distance
+    float horizontalDist = length(worldPos.xz);
+    float phi = horizontalDist / localRadius;
+
+    // Apply spherical projection
+    // Y displacement: terrain curves down at distance
+    worldPos.y += (cos(phi) - 1.0) * localRadius;
+
+    // XZ scaling: slight convergence at extreme distances (prevents horizon stretching)
+    if (phi > 0.0001) {
+        worldPos.xz = worldPos.xz * sin(phi) / phi;
+    }
+
+    return worldPos;
+}
+
 vec4 getQuadCornerPos(in QuadData quad, uint cornerId) {
     vec2 cornerMask = vec2((cornerId>>1)&1u, cornerId&1u)*quad.lodScale;
     vec3 point = quad.basePoint + swizzelDataAxis(quad.axis,vec3(quad.quadSizeAddin*cornerMask,0));
+
+    // Apply world curvature before MVP transformation
+    point = applyWorldCurvature(point);
+
     vec4 pos = MVP * vec4(point, 1.0f);
     pos.xy += taaOffset*pos.w;
     return pos;

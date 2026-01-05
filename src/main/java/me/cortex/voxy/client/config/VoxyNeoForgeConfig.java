@@ -67,6 +67,16 @@ public class VoxyNeoForgeConfig {
                      "0 = exact match (may have gaps), 1 = minimal overlap, 2-4 = smoother for fast flight")
             .defineInRange("lodBoundaryBuffer", 1, 0, 4);
 
+    // World curvature (experimental)
+    private static final ModConfigSpec.IntValue EARTH_CURVE_RATIO = BUILDER
+            .comment("World curvature effect - simulates standing on a spherical planet",
+                     "0 = disabled (flat world)",
+                     "1 = real Earth curvature (6371km radius)",
+                     "Higher values = more extreme curvature (smaller planet effect)",
+                     "Valid range: 0 (off), or 50-5000. Values 1-49 are auto-corrected to 50.",
+                     "Inspired by Distant Horizons' earth curvature feature")
+            .defineInRange("earthCurveRatio", 0, 0, 5000);
+
     // Debug settings
     private static final ModConfigSpec.BooleanValue RENDER_STATISTICS = BUILDER
             .comment("Show render statistics in F3 debug screen",
@@ -96,6 +106,7 @@ public class VoxyNeoForgeConfig {
         VoxyConfig.CONFIG.useEnvironmentalFog = USE_ENVIRONMENTAL_FOG.get();
         VoxyConfig.CONFIG.dontUseSodiumBuilderThreads = DONT_USE_SODIUM_BUILDER_THREADS.get();
         VoxyConfig.CONFIG.lodBoundaryBuffer = LOD_BOUNDARY_BUFFER.get();
+        VoxyConfig.CONFIG.earthCurveRatio = EARTH_CURVE_RATIO.get();
 
         // RenderStatistics is a runtime-only setting (not saved to JSON)
         RenderStatistics.enabled = RENDER_STATISTICS.get();
@@ -157,5 +168,9 @@ public class VoxyNeoForgeConfig {
 
     public static boolean isRenderStatisticsEnabled() {
         return RENDER_STATISTICS.get();
+    }
+
+    public static int getEarthCurveRatio() {
+        return EARTH_CURVE_RATIO.get();
     }
 }

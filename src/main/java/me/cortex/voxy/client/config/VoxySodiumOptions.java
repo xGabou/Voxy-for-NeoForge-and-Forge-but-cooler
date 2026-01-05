@@ -150,6 +150,18 @@ public class VoxySodiumOptions {
                                 config -> RenderStatistics.enabled
                         )
                         .build())
+                .add(OptionImpl.createBuilder(int.class, storage)
+                        .setName(Component.translatable("voxy.sodium.option.earth_curve_ratio"))
+                        .setTooltip(Component.translatable("voxy.sodium.option.earth_curve_ratio.tooltip"))
+                        .setControl(opt -> new SliderControl(opt, 0, 500, 10,
+                                v -> v == 0 ? Component.literal("Disabled") :
+                                     v < 50 ? Component.literal("→ 50 (min)") :
+                                     Component.literal(v + "x")))
+                        .setBinding(
+                                (config, value) -> config.earthCurveRatio = value < 50 && value > 0 ? 50 : value,
+                                config -> config.earthCurveRatio
+                        )
+                        .build())
                 .build();
     }
 

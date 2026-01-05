@@ -17,6 +17,7 @@ import me.cortex.voxy.client.core.rendering.util.DownloadStream;
 import me.cortex.voxy.client.core.rendering.util.LightMapHelper;
 import me.cortex.voxy.client.core.rendering.util.SharedIndexBuffer;
 import me.cortex.voxy.client.core.rendering.util.UploadStream;
+import me.cortex.voxy.client.config.VoxyConfig;
 import me.cortex.voxy.common.Logger;
 import me.cortex.voxy.common.world.WorldEngine;
 import net.minecraft.client.Minecraft;
@@ -145,6 +146,16 @@ public class MDICSectionRenderer extends AbstractSectionRenderer<MDICViewport, B
         }
         MemoryUtil.memPutInt(ptr, viewport.frameId&0x7fffffff); ptr += 4;
         viewport.innerTranslation.getToAddress(ptr); ptr += 4*3;
+
+        // Earth curvature radius: 0 = disabled, otherwise compute radius in blocks
+        // DH uses: radius = 6371000.0 / ratio (Earth radius in meters / ratio factor)
+        // We use blocks (1 block = 1 meter), so same formula
+        int earthCurveRatio = VoxyConfig.CONFIG.earthCurveRatio;
+        float earthRadius = 0.0f;
+        if (earthCurveRatio >= 50) {
+            earthRadius = 6371000.0f / earthCurveRatio;
+        }
+        MemoryUtil.memPutFloat(ptr, earthRadius); ptr += 4;
 
         UploadStream.INSTANCE.commit();
     }

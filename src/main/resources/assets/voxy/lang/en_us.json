@@ -64,5 +64,8 @@
   "voxy.sodium.option.lod_boundary_buffer.tooltip": "Controls overlap between vanilla chunks and LODs. Higher = smoother transitions when flying fast, but slight overdraw.",
 
   "voxy.sodium.option.render_statistics": "Debug Statistics",
-  "voxy.sodium.option.render_statistics.tooltip": "Show LOD render statistics in the F3 debug screen"
+  "voxy.sodium.option.render_statistics.tooltip": "Show LOD render statistics in the F3 debug screen",
+
+  "voxy.sodium.option.earth_curve_ratio": "World Curvature",
+  "voxy.sodium.option.earth_curve_ratio.tooltip": "Simulates standing on a spherical planet. 0 = flat world. Higher values = smaller planet effect (more curvature). Inspired by Distant Horizons."
 }
