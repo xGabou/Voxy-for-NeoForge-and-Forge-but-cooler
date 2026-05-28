@@ -59,7 +59,6 @@ public class VoxyClient {
 
     /**
      * NeoForge event handler for client command registration.
-     * Replaces Fabric's ClientCommandRegistrationCallback.
      */
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
@@ -68,8 +67,7 @@ public class VoxyClient {
         }
     }
 
-    // Note: FREX flawless frames integration disabled on NeoForge
-    // (Fabric-specific entrypoint mechanism not available)
+    // FREX flawless frames integration remains disabled here.
 
     public static boolean isFrexActive() {
         return !FREX.isEmpty();

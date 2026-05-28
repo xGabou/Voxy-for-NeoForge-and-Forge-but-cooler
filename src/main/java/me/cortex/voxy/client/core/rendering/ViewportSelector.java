@@ -1,8 +1,7 @@
 package me.cortex.voxy.client.core.rendering;
 
-// MC 1.21.1 NeoForge: Iris/Vivecraft integrations excluded - not available on NeoForge
+// Iris/Vivecraft integrations are excluded from the default build.
 // import me.cortex.voxy.client.core.util.IrisUtil;
-// import net.fabricmc.loader.api.FabricLoader;
 // import org.vivecraft.api.client.VRRenderingAPI;
 // import static org.vivecraft.api.client.data.RenderPass.VANILLA;
 import net.neoforged.fml.ModList;
@@ -12,7 +11,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class ViewportSelector <T extends Viewport<?>> {
-    // MC 1.21.1 NeoForge: Vivecraft not available - always false
+    // Vivecraft is not part of the default build.
     public static final boolean VIVECRAFT_INSTALLED = ModList.get() != null && ModList.get().isLoaded("vivecraft");
 
     private final Supplier<T> creator;
@@ -28,7 +27,7 @@ public class ViewportSelector <T extends Viewport<?>> {
         return this.extraViewports.computeIfAbsent(holder, a->this.creator.get());
     }
 
-    // MC 1.21.1 NeoForge: Vivecraft VR rendering not available
+    // Vivecraft VR rendering is not enabled in this build.
     // private T getVivecraftViewport() {
     //     var pass = VRRenderingAPI.instance().getCurrentRenderPass();
     //     if (pass == null || pass == VANILLA) {

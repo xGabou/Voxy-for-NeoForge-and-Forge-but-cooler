@@ -14,11 +14,10 @@ import java.util.regex.Pattern;
 /**
  * NeoForge-compatible shader loader for Voxy.
  *
- * On Fabric, Sodium's ShaderLoader.getShaderSource() uses a flat classloader that can
- * access all mod resources. On NeoForge, each mod has an isolated classloader, so
- * Sodium's classloader cannot access Voxy's shader resources.
+ * On NeoForge, each mod has an isolated classloader, so Sodium's loader cannot
+ * access Voxy's shader resources.
  *
- * This loader bypasses Sodium's resource loading and uses Voxy's own classloader.
+ * This loader bypasses Sodium's resource loading and uses Voxy's classloader.
  *
  * Upstream reference: https://github.com/MCRcortex/voxy
  * See: src/main/java/me/cortex/voxy/client/core/gl/shader/ShaderLoader.java

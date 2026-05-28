@@ -1,64 +1,60 @@
 plugins {
-    id 'net.neoforged.moddev' version "2.0.42-beta"
+    id 'java-library'
     id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.1.36'
 }
 
-def isInGHA = System.getenv("GITHUB_ACTIONS") == "true"
+tasks.named('wrapper', Wrapper).configure {
+    // Keep the wrapper on the binary distribution to avoid pulling Gradle docs sources.
+    distributionType = Wrapper.DistributionType.BIN
+}
 
-version = project.mod_version
-group = project.maven_group
+version = mod_version
+group = mod_group_id
 
 base {
-    archivesName = project.archives_base_name
+    archivesName = mod_id
 }
 
-// Exclude optional integrations from compilation - not all available for NeoForge 1.21.1
-// These can be re-enabled once NeoForge versions become available
 sourceSets {
     main {
+        resources {
+            srcDir('src/generated/resources')
+            exclude("**/*.bbmodel")
+            exclude("src/generated/**/.cache")
+        }
         java {
-            // Iris shader integration
+            // Optional integrations that are not part of the current NeoForge build.
             exclude 'me/cortex/voxy/client/iris/**'
             exclude 'me/cortex/voxy/client/core/IrisVoxyRenderPipeline.java'
             exclude 'me/cortex/voxy/client/core/util/IrisUtil.java'
             exclude 'me/cortex/voxy/client/mixin/iris/**'
 
-            // Sodium config API (changed in Sodium 0.6.x)
+            // Optional config UI hooks not shipped in this build.
             exclude 'me/cortex/voxy/client/config/SodiumConfigBuilder.java'
             exclude 'me/cortex/voxy/client/config/VoxyConfigMenu.java'
             exclude 'me/cortex/voxy/client/config/IConfigPageSetter.java'
 
-            // ModMenu integration (Fabric-only)
             exclude 'me/cortex/voxy/client/config/ModMenuIntegration.java'
 
-            // Vivecraft VR integration - ViewportSelector now NeoForge-compatible
-            // ViewportSelector no longer excluded
-
-            // Flashback integration mixins
             exclude 'me/cortex/voxy/client/mixin/flashback/**'
-
-            // Nvidium integration mixins
             exclude 'me/cortex/voxy/client/mixin/nvidium/**'
 
-            // Debug screen integration (API changed in MC 1.21.1)
+            // Debug screen and OpenGL debug hooks are not part of the NeoForge 1.21.1 build.
             exclude 'me/cortex/voxy/client/VoxyDebugScreenEntry.java'
             exclude 'me/cortex/voxy/client/mixin/minecraft/MixinDebugScreenEntryList.java'
-
-            // Sodium config integration mixin
             exclude 'me/cortex/voxy/client/mixin/sodium/MixinVideoSettingsScreen.java'
-
-            // Blaze3D OpenGL debug mixin (GlDebug class not accessible in MC 1.21.1)
             exclude 'me/cortex/voxy/client/mixin/minecraft/MixinGlDebug.java'
-
-            // MixinFogRenderer now compatible with MC 1.21.1 (rewritten to target net.minecraft.client.renderer.FogRenderer)
-
-            // BlockableEventLoop mixin (isNonRecoverable method removed in MC 1.21.1 - Issue #2)
             exclude 'me/cortex/voxy/client/mixin/minecraft/MixinBlockableEventLoop.java'
         }
     }
 }
 
 repositories {
+    mavenCentral()
+    maven {
+        url "https://cursemaven.com"
+    }
     exclusiveContent {
         forRepository {
             maven {
@@ -71,22 +67,18 @@ repositories {
         }
     }
 
+
+
     exclusiveContent {
         forRepository {
             maven {
-                name "caffeinemcRepository"
-                url "https://maven.caffeinemc.net/snapshots"
+                name = "CaffeineMC"
+                url = "https://maven.caffeinemc.net/snapshots"
             }
         }
         filter {
             includeGroup "net.caffeinemc"
         }
-    }
-
-    // Forgified Fabric API for NeoForge
-    maven {
-        name = "Sinytra"
-        url = "https://maven.su5ed.dev/releases"
     }
 
     maven { url = "https://maven.shedaniel.me/" }
@@ -111,180 +103,230 @@ repositories {
     }
 }
 
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-def gitCommitHash = { ->
-    try {
-        ExecOutput result = providers.exec {
-            commandLine = ['git', 'rev-parse', '--short', 'HEAD']
-            ignoreExitValue = true
-        }
+// Access transformers are still used in this build.
+minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
 
-        if (result.getResult().get().getExitValue() != 0) {
-            return "<UnknownCommit>";
-        } else {
-            return result.standardOutput.asText.get().strip();
-        }
-    } catch (Exception e) {
-        e.printStackTrace()
-        return "<UnknownCommit>";
+// Default run configurations.
+runs {
+    configureEach {
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+        workingDirectory project.layout.projectDirectory.dir('run').dir(name)
+        modSource project.sourceSets.main
+    }
+
+    client {
+        systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+    }
+
+    server {
+        systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+        argument '--nogui'
+    }
+
+    gameTestServer {
+        systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+    }
+
+    data {
+        arguments.addAll '--mod', mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
     }
 }
 
-def buildtime = {System.currentTimeSeconds()}
-
-processResources {
-    def time = buildtime()
-    def hash = gitCommitHash()
-    def version = project.version
-
-    inputs.properties("version": version, "commit": hash, "buildtime": time)
-    filesMatching("META-INF/neoforge.mods.toml") {
-        expand "version": version, "commit": hash, "buildtime": time
-    }
-
-    // Exclude leftover Fabric metadata from NeoForge build
-    exclude 'fabric.mod.json'
-    exclude 'voxy.accesswidener'
-}
-
-neoForge {
-    version = project.neoforge_version
-
-    // Validate access transformers at build time to catch invalid targets
-    // Temporarily disabled to debug build issue
-    // validateAccessTransformers = true
-
-    accessTransformers {
-        file('src/main/resources/META-INF/accesstransformer.cfg')
-    }
-
-    parchment {
-        minecraftVersion = project.minecraft_version
-        mappingsVersion = "2024.11.17"
-    }
-}
-
-def modRuntimeOnlyMsk = {arg->}
-if (!isInGHA) {
-    modRuntimeOnlyMsk = { arg ->
-        dependencies {
-            modRuntimeOnly(arg)
-        }
-    }
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
 }
 
 dependencies {
-    // To change the versions see the gradle.properties file
-    implementation "net.neoforged:neoforge:${project.neoforge_version}"
-
-    // Forgified Fabric API for compatibility (includes Fabric Loader API)
-    implementation "org.sinytra.forgified-fabric-api:forgified-fabric-api:${project.forgified_fabric_version}"
-
-    // Sodium for NeoForge (0.6.13 - latest for MC 1.21.1)
+    implementation "net.neoforged:neoforge:${neo_version}"
+    implementation "curse.maven:simple-clouds-1121215:6928979"
     implementation "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
-
-    // Lithium for NeoForge (0.15.1 - latest for MC 1.21.1)
     implementation("maven.modrinth:lithium:mc1.21.1-0.15.1-neoforge")
-
-    // SodiumOptionsAPI for Video Settings integration
-    // Provides event API to add custom pages to Sodium's options GUI
     compileOnly("maven.modrinth:sodium-options-api:neoforge-1.21.1-1.0.10")
-
-    // Reese's Sodium Options - required by SodiumOptionsAPI
     compileOnly("maven.modrinth:reeses-sodium-options:mc1.21.3-1.8.0+neoforge")
 
-    // Optional mod dependencies - commented out for initial port
-    // TODO: Add NeoForge versions when available
-    //compileOnly "drouarb:nvidium:0.4.1-beta4:1.21.6@jar"
-    //compileOnly("maven.modrinth:modmenu:17.0.0-alpha.1")
-    //compileOnly("maven.modrinth:iris:1.10.4+1.21.11-neoforge")
-    //compileOnly("maven.modrinth:chunky:1.4.54-neoforge")
-    //compileOnly("maven.modrinth:vivecraft:1.21.9-1.3.2-neoforge")
-    //compileOnly("maven.modrinth:flashback:rNCr1Rbs")
-}
-
-
-def targetJavaVersion = 21
-tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = "UTF-8"
-    it.options.release = targetJavaVersion
-    it.options.deprecation = true
-}
-
-java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    // Native runtime and bundled libraries
+    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+    implementation "org.lwjgl:lwjgl"
+    jarJar(implementation("org.lwjgl:lwjgl-lmdb:$lwjglVersion")) {
+        version { strictly "[3.3.0,4.0.0)"; prefer "$lwjglVersion" }
     }
+    jarJar(implementation("org.lwjgl:lwjgl-zstd:$lwjglVersion")) {
+        version { strictly "[3.3.0,4.0.0)"; prefer "$lwjglVersion" }
+    }
+    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion"
+    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion"
+    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-windows"
+    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-windows"
+    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-linux"
+    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-linux"
 
-    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-    // if it is present.
-    // If you remove this line, sources will not be generated.
-
-
-    //withSourcesJar()
+    // Bundled server-side storage and import dependencies.
+    jarJar(implementation('org.rocksdb:rocksdbjni')) {
+        version {
+            strictly '[10.0.0, 11.0.0)'
+            prefer '10.2.1'
+        }
+    }
+    implementation 'org.lz4:lz4-java:1.8.0'
+    jarJar(implementation('redis.clients:jedis:5.1.0')) {
+        version {
+            strictly '[5.0.0, 6.0.0)'
+            prefer '5.1.0'
+        }
+    }
+    implementation 'org.apache.commons:commons-pool2:2.12.0'
+    jarJar(implementation('org.tukaani:xz:1.10')) {
+        version {
+            strictly '[1.9, 2.0)'
+            prefer '1.10'
+        }
+    }
+    jarJar(implementation('org.xerial:sqlite-jdbc:3.49.1.0')) {
+        version {
+            strictly '[3.40.0.0, 4.0.0.0)'
+            prefer '3.49.1.0'
+        }
+    }
 }
+
 
 jar {
     from("LICENSE") {
-        rename { "${it}_${project.archives_base_name}"}
+        rename { "${it}_${mod_id}"}
     }
 }
 
-// Validate mixin configuration (registration, exclusions, remap flags)
-task validateMixinConfig(type: Exec) {
-    description = 'Validates mixin registration, exclusions, and configuration'
-    group = 'verification'
-
-    commandLine 'python3', 'scripts/validate_mixin_config.py'
-
-    // Only run if script exists
-    onlyIf {
-        file('scripts/validate_mixin_config.py').exists()
-    }
-}
-
-// Validate mixin target signatures before compilation
-task validateMixinSignatures(type: Exec) {
-    description = 'Validates @Inject/@Shadow targets against Minecraft source'
-    group = 'verification'
-
-    commandLine 'python3', 'scripts/validate_mixin_targets.py'
-
-    // Only run if script and MC sources exist
-    onlyIf {
-        file('scripts/validate_mixin_targets.py').exists() &&
-        file('.reference/minecraft/1.21.1/decompiled').exists()
-    }
-
-    // Ignore failures if sources not available or script has issues (optional validation)
-    ignoreExitValue = true
-}
-
-// Validate mixin configurations after JAR creation
-task validateMixins(type: Exec) {
+tasks.register('validateMixins') {
     dependsOn jar
 
     description = 'Validates that all mixins declared in JSON configs are present in the JAR'
     group = 'verification'
 
-    commandLine 'bash', 'scripts/validate_mixins.sh'
+    doLast {
+        def mixinConfigs = new ArrayList<File>()
+        fileTree('src/main/resources') {
+            include '**/*.mixins.json'
+        }.files.each { File file ->
+            mixinConfigs.add(file)
+        }
+        java.util.Collections.sort(mixinConfigs, new Comparator<File>() {
+            @Override
+            int compare(File a, File b) {
+                return a.path.compareTo(b.path)
+            }
+        })
 
-    // Only run if script exists
-    onlyIf {
-        file('scripts/validate_mixins.sh').exists()
+        if (mixinConfigs.isEmpty()) {
+            logger.lifecycle('No mixin configuration files found; skipping mixin validation.')
+            return
+        }
+
+        def jarFile = tasks.named('jar').get().archiveFile.get().asFile
+        if (!jarFile.exists()) {
+            throw new GradleException("No JAR file found at ${jarFile}")
+        }
+
+        def jarEntries = new HashSet<String>()
+        def zipFile = new java.util.zip.ZipFile(jarFile)
+        try {
+            def entries = zipFile.entries()
+            while (entries.hasMoreElements()) {
+                def entry = entries.nextElement()
+                jarEntries.add(entry.name)
+            }
+        } finally {
+            zipFile.close()
+        }
+
+        def slurper = new groovy.json.JsonSlurper()
+        def totalMixins = 0
+        def errors = []
+
+        println '=== MIXIN CONFIGURATION VALIDATION ==='
+        println()
+
+        for (File jsonFile : mixinConfigs) {
+            def configName = jsonFile.name
+            println "Checking ${configName}..."
+
+            def parsed
+            try {
+                parsed = slurper.parse(jsonFile)
+            } catch (Exception e) {
+                errors << "${configName}: invalid JSON syntax (${e.message})"
+                println '  FAIL: Invalid JSON syntax'
+                println()
+                return
+            }
+
+            def packageName = parsed.package
+            if (!packageName) {
+                errors << "${configName}: missing package declaration"
+                println '  FAIL: Missing package declaration'
+                println()
+                return
+            }
+
+            for (String arrayType : ['mixins', 'client', 'server']) {
+                def mixins = parsed[arrayType]
+                if (mixins instanceof Collection && !mixins.isEmpty()) {
+                    println "  Validating .${arrayType}[]..."
+
+                    for (def mixin : mixins) {
+                        if (mixin) {
+                            totalMixins++
+
+                            def classPath = ("${packageName.replace('.', '/')}/${mixin.replace('.', '/')}.class").toString()
+                            if (jarEntries.contains(classPath)) {
+                                println "    PASS ${mixin}"
+                            } else {
+                                errors.add("${configName}: missing ${mixin} (${classPath})")
+                                println "    FAIL ${mixin}"
+                                println "      Expected: ${classPath}"
+                                println '      Status: NOT FOUND IN JAR'
+                            }
+                        }
+                    }
+                }
+            }
+
+            println()
+        }
+
+        println '=== VALIDATION SUMMARY ==='
+        println "Total mixins checked: ${totalMixins}"
+        println "JAR file: ${jarFile.name}"
+        println "JAR size: ${jarFile.length()}"
+        println()
+
+        if (errors.isEmpty()) {
+            println 'PASS: ALL CHECKS PASSED'
+            println 'All mixin references are valid and present in JAR'
+        } else {
+            println 'FAIL: VALIDATION FAILED'
+            println "Found ${errors.size()} phantom mixin reference(s)"
+            println()
+            println 'These mixins are declared in JSON configs but missing from the JAR.'
+            println 'This will cause ClassNotFoundException at runtime.'
+            println()
+            println 'Common causes:'
+            println '  1. Mixin class excluded from compilation (check build.gradle sourceSets)'
+            println '  2. Mixin class deleted but not removed from JSON'
+            println '  3. Typo in mixin class name'
+            for (String error : errors) {
+                logger.error(error)
+            }
+            throw new GradleException('Mixin validation failed')
+        }
     }
 }
 
-// Run validations as part of build process
-compileJava.dependsOn validateMixinConfig       // Before compilation (config check)
-compileJava.dependsOn validateMixinSignatures   // Before compilation (signature check)
-build.dependsOn validateMixins                   // After JAR creation (content check)
+build.dependsOn tasks.named('validateMixins')
 
-
-
-// NeoForge: makeExcludedRocksDB and processIncludeJars are Fabric Loom specific - removed
-// TODO: Implement NeoForge equivalent for RocksDB filtering if needed
+// NeoForge: makeExcludedRocksDB and processIncludeJars are no longer used in this build.
 /*
 tasks.register('makeExcludedRocksDB', Zip) {
     archiveExtension.set("jar")
@@ -321,8 +363,7 @@ processIncludeJars {
 }
 */
 
-// NeoForge: remapJar is handled by NeoGradle automatically
-// TODO: Re-implement git hash classifier for NeoForge jar task
+// NeoForge: remapJar is handled by NeoGradle automatically.
 /*
 remapJar {
     doFirst {
@@ -339,11 +380,6 @@ remapJar {
 */
 
 project.ext.lwjglVersion = "3.3.3"
-project.ext.lwjglNatives = "natives-windows"
-
-repositories {
-    mavenCentral()
-}
 
 // Configuration to download LWJGL natives for repackaging
 configurations {
@@ -428,14 +464,13 @@ dependencies {
     jarJar(implementation("org.lwjgl:lwjgl-zstd:$lwjglVersion")) {
         version { strictly "[3.3.0,4.0.0)"; prefer "$lwjglVersion" }
     }
-    // Add to runtime classpath for MC 1.21.1 (not needed for 1.21.9+)
-    additionalRuntimeClasspath "org.lwjgl:lwjgl-lmdb:$lwjglVersion"
-    additionalRuntimeClasspath "org.lwjgl:lwjgl-zstd:$lwjglVersion"
-    // Natives also need to be on runtime classpath (LWJGL extracts from classpath)
-    additionalRuntimeClasspath "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-windows"
-    additionalRuntimeClasspath "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-windows"
-    additionalRuntimeClasspath "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-linux"
-    additionalRuntimeClasspath "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-linux"
+    // Add to local runtime so the IDE can launch with these libraries present.
+    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion"
+    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion"
+    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-windows"
+    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-windows"
+    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-linux"
+    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-linux"
 
     // === JarJar Bundled Dependencies (full feature parity) ===
 
@@ -475,19 +510,4 @@ dependencies {
     }
     //implementation 'org.rocksdb:rocksdbjni:8.10.0'
     //implementation 'redis.clients:jedis:5.1.0'
-}
-
-if (!isInGHA) {
-    repositories {
-        maven {
-            url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1"
-        }
-    }
-
-    dependencies {
-        /*
-        modRuntimeOnly('me.djtheredstoner:DevAuth-fabric:1.2.1') {
-            exclude group: 'net.fabricmc', module: 'fabric-loader'
-        }*/
-    }
 }
