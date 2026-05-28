@@ -1,4 +1,4 @@
-# Voxy NeoForge and Forge 1.21.1
+# Voxy NeoForge 1.21.1 and Forge 1.20.1
 
 All credit for Voxy goes to [MCRcortex](https://github.com/MCRcortex), the original creator of the mod.
 
