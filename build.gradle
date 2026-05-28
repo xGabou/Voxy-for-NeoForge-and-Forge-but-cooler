@@ -26,12 +26,6 @@ sourceSets {
             exclude("src/generated/**/.cache")
         }
         java {
-            // Optional integrations that are not part of the current NeoForge build.
-            exclude 'me/cortex/voxy/client/iris/**'
-            exclude 'me/cortex/voxy/client/core/IrisVoxyRenderPipeline.java'
-            exclude 'me/cortex/voxy/client/core/util/IrisUtil.java'
-            exclude 'me/cortex/voxy/client/mixin/iris/**'
-
             // Optional config UI hooks not shipped in this build.
             exclude 'me/cortex/voxy/client/config/SodiumConfigBuilder.java'
             exclude 'me/cortex/voxy/client/config/VoxyConfigMenu.java'
@@ -146,6 +140,7 @@ dependencies {
     implementation "curse.maven:simple-clouds-1121215:6928979"
     implementation "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
     implementation("maven.modrinth:lithium:mc1.21.1-0.15.1-neoforge")
+    compileOnly "curse.maven:oculus-581495:6020952"
 
     // Native runtime and bundled libraries
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
@@ -170,6 +165,7 @@ dependencies {
             prefer '10.2.1'
         }
     }
+    localRuntime 'org.rocksdb:rocksdbjni:10.2.1'
     implementation 'org.lz4:lz4-java:1.8.0'
     jarJar(implementation('redis.clients:jedis:5.1.0')) {
         version {
@@ -177,6 +173,7 @@ dependencies {
             prefer '5.1.0'
         }
     }
+    localRuntime 'redis.clients:jedis:5.1.0'
     implementation 'org.apache.commons:commons-pool2:2.12.0'
     jarJar(implementation('org.tukaani:xz:1.10')) {
         version {
@@ -184,12 +181,14 @@ dependencies {
             prefer '1.10'
         }
     }
+    localRuntime 'org.tukaani:xz:1.10'
     jarJar(implementation('org.xerial:sqlite-jdbc:3.49.1.0')) {
         version {
             strictly '[3.40.0.0, 4.0.0.0)'
             prefer '3.49.1.0'
         }
     }
+    localRuntime 'org.xerial:sqlite-jdbc:3.49.1.0'
 }
 
 tasks.withType(ProcessResources).configureEach {
@@ -239,6 +238,14 @@ jar {
     from("LICENSE") {
         rename { "${it}_${mod_id}"}
     }
+}
+
+tasks.named('jar').configure {
+    archiveClassifier = 'thin'
+}
+
+tasks.named('jarJar').configure {
+    archiveClassifier = ''
 }
 
 tasks.register('validateMixins') {
@@ -432,69 +439,4 @@ tasks.named('jar') {
         // Natives at JAR root for LWJGL to find
         into ''
     }
-}
-
-dependencies {
-    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
-
-    // LWJGL core - provided by Minecraft
-    implementation "org.lwjgl:lwjgl"
-
-    // LWJGL-LMDB and LWJGL-ZSTD - Required by Voxy, NOT provided by Minecraft
-    // Reference: https://docs.neoforged.net/toolchain/docs/dependencies/nonmclibs/
-    //
-    // The natives JARs originally have module-info.class with "requires org.lwjgl.zstd"
-    // which causes JPMS conflict. We repackage them without module-info.class above.
-    jarJar(implementation("org.lwjgl:lwjgl-lmdb:$lwjglVersion")) {
-        version { strictly "[3.3.0,4.0.0)"; prefer "$lwjglVersion" }
-    }
-    jarJar(implementation("org.lwjgl:lwjgl-zstd:$lwjglVersion")) {
-        version { strictly "[3.3.0,4.0.0)"; prefer "$lwjglVersion" }
-    }
-    // Add to local runtime so the IDE can launch with these libraries present.
-    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion"
-    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion"
-    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-windows"
-    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-windows"
-    localRuntime "org.lwjgl:lwjgl-lmdb:$lwjglVersion:natives-linux"
-    localRuntime "org.lwjgl:lwjgl-zstd:$lwjglVersion:natives-linux"
-
-    // === JarJar Bundled Dependencies (full feature parity) ===
-
-    // RocksDB - Default storage backend
-    jarJar(implementation('org.rocksdb:rocksdbjni')) {
-        version {
-            strictly '[10.0.0, 11.0.0)'
-            prefer '10.2.1'
-        }
-    }
-
-    // LZ4 - PROVIDED by Minecraft runtime (do NOT bundle - causes module conflict)
-    implementation 'org.lz4:lz4-java:1.8.0'
-
-    // Redis storage backend + connection pooling
-    jarJar(implementation('redis.clients:jedis:5.1.0')) {
-        version {
-            strictly '[5.0.0, 6.0.0)'
-            prefer '5.1.0'
-        }
-    }
-    // commons-pool2 is a transitive dependency of jedis
-    implementation 'org.apache.commons:commons-pool2:2.12.0'
-
-    // Distant Horizons import support
-    jarJar(implementation('org.tukaani:xz:1.10')) {
-        version {
-            strictly '[1.9, 2.0)'
-            prefer '1.10'
-        }
-    }
-    jarJar(implementation('org.xerial:sqlite-jdbc:3.49.1.0')) {
-        version {
-            strictly '[3.40.0.0, 4.0.0.0)'
-            prefer '3.49.1.0'
-        }
-    }
-    //implementation 'org.rocksdb:rocksdbjni:8.10.0'
-    //implementation 'redis.clients:jedis:5.1.0'
 }

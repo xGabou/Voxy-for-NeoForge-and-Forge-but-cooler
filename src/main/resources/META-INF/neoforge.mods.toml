@@ -33,8 +33,18 @@ versionRange="[0.6.13,)"
 ordering="AFTER"
 side="CLIENT"
 
+[[dependencies.${mod_id}]]
+modId="oculus"
+type="optional"
+versionRange="[1,)"
+ordering="AFTER"
+side="CLIENT"
+
 [[mixins]]
 config="client.voxy.mixins.json"
+
+[[mixins]]
+config="iris.voxy.mixins.json"
 
 [[mixins]]
 config="common.voxy.mixins.json"

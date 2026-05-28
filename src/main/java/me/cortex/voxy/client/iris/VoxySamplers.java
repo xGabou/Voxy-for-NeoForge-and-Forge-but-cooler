@@ -6,6 +6,15 @@ import net.irisshaders.iris.gl.texture.TextureType;
 import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
 
 public class VoxySamplers {
+    private static GlSampler nearestMipSampler;
+
+    private static GlSampler nearestMipSampler() {
+        if (nearestMipSampler == null) {
+            nearestMipSampler = new GlSampler(false, true, false, false);
+        }
+        return nearestMipSampler;
+    }
+
     public static void addSamplers(IrisRenderingPipeline pipeline, SamplerHolder samplers) {
         var patchData = ((IGetVoxyPatchData)pipeline).voxy$getPatchData();
         if (patchData != null) {
@@ -33,7 +42,7 @@ public class VoxySamplers {
                     return 0;
                 }
                 return dt.id;
-            }, ()->GlSampler.MIPPED_NEAREST_NEAREST, opaqueNames);
+            }, nearestMipSampler(), opaqueNames);
 
             samplers.addDynamicSampler(TextureType.TEXTURE_2D, () -> {
                 var pipeData = ((IGetIrisVoxyPipelineData)pipeline).voxy$getPipelineData();
@@ -49,7 +58,7 @@ public class VoxySamplers {
                     return 0;
                 }
                 return dt.id;
-            }, ()->GlSampler.MIPPED_NEAREST_NEAREST, translucentNames);
+            }, nearestMipSampler(), translucentNames);
         }
     }
 }
