@@ -84,9 +84,8 @@ public class Serialization {
     public static void init() {
         Map<Class<?>, GsonConfigSerialization<?>> serializers = new HashMap<>();
 
-        // NeoForge: Use Class.forName() with initialize=true to trigger static initializers
-        // This matches NeoForge's pattern in GameTestHooks.java:76 and upstream Fabric behavior
-        // Class literals (.class) only LOAD classes, they don't INITIALIZE them
+        // Use Class.forName() with initialize=true to trigger static initializers.
+        // Class literals (.class) only load classes; they do not initialize them.
         // Static initializers in base config classes (CompressorConfig, StorageConfig, etc.)
         // add themselves to CONFIG_TYPES, so we must initialize to populate CONFIG_TYPES
         String[] configClassNames = {

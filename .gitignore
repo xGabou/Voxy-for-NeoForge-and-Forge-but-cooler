@@ -1,24 +1,40 @@
-# Project exclude paths
-/.gradle/
-/.idea/
-/build/
-/run/
-/out/
-/logs/
+### Gradle ###
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
 
-# Reference dependency clones for development
-/.reference/
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/**/out/
 
-# Agent orchestration task files
-/.agent/
+.run/
 
-# Local deployment scripts (contain SSH config)
-/scripts/deploy.sh
-/scripts/build_and_deploy.sh
-/scripts/list_instances.sh
-/scripts/logs.sh
-/scripts/tail_logs.sh
-/scripts/grep_logs.sh
+### Eclipse ###
+.apt_generated
+.classpath
+.eclipse/
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/**/bin/
 
-# macOS metadata
+### VS Code ###
+.vscode/
+
+### Mac OS ###
 .DS_Store
+
+### Minecraft Modding ###
+run/
+!**/src/**/run/
+**/src/generated/**/.cache/
+repo/
+!**/src/**/repo/

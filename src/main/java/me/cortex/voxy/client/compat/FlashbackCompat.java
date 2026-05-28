@@ -6,17 +6,16 @@ package me.cortex.voxy.client.compat;
 // import com.moulberry.flashback.record.FlashbackMeta;
 import me.cortex.voxy.common.Logger;
 import me.cortex.voxy.common.config.section.SectionStorageConfig;
-// NeoForge: FabricLoader replaced with ModList (unused - Flashback integration disabled)
 // import net.neoforged.fml.ModList;
 
 import java.nio.file.Path;
 
 public class FlashbackCompat {
-    // Disabled for NeoForge 1.21.1 port - Flashback not available
-    public static final boolean FLASHBACK_INSTALLED = false; // FabricLoader.getInstance().isModLoaded("flashback");
+    // Flashback integration is disabled in this build.
+    public static final boolean FLASHBACK_INSTALLED = false;
 
     public static Path getReplayStoragePath() {
-        // Stubbed out - Flashback integration disabled for NeoForge port
+        // Stubbed out while Flashback integration is disabled.
         return null;
         /*
         if (!FLASHBACK_INSTALLED) {
