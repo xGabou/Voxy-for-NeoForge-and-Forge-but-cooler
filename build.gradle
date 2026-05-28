@@ -16,6 +16,8 @@ base {
     archivesName = mod_id
 }
 
+project.ext.lwjglVersion = "3.3.3"
+
 sourceSets {
     main {
         resources {
@@ -144,8 +146,6 @@ dependencies {
     implementation "curse.maven:simple-clouds-1121215:6928979"
     implementation "maven.modrinth:sodium:mc1.21.1-0.6.13-neoforge"
     implementation("maven.modrinth:lithium:mc1.21.1-0.15.1-neoforge")
-    compileOnly("maven.modrinth:sodium-options-api:neoforge-1.21.1-1.0.10")
-    compileOnly("maven.modrinth:reeses-sodium-options:mc1.21.3-1.8.0+neoforge")
 
     // Native runtime and bundled libraries
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
@@ -189,6 +189,48 @@ dependencies {
             strictly '[3.40.0.0, 4.0.0.0)'
             prefer '3.49.1.0'
         }
+    }
+}
+
+tasks.withType(ProcessResources).configureEach {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
     }
 }
 
@@ -325,61 +367,6 @@ tasks.register('validateMixins') {
 }
 
 build.dependsOn tasks.named('validateMixins')
-
-// NeoForge: makeExcludedRocksDB and processIncludeJars are no longer used in this build.
-/*
-tasks.register('makeExcludedRocksDB', Zip) {
-    archiveExtension.set("jar")
-    entryCompression = ZipEntryCompression.STORED
-    destinationDirectory.set temporaryDir
-
-    dependsOn configurations.includeInternal
-
-    def files = configurations.includeInternal.incoming.getArtifacts().getArtifactFiles().filter {
-        it.name.startsWith('rocksdb')
-    }
-
-    from {->zipTree(files.first())}
-    archiveFileName.set(providers.provider{files.first().name})
-
-    exclude {
-        def file = it.name
-        if (file.endsWith(".jnilib")) {
-            return true
-        }
-        if (!file.endsWith(".so")) {
-            return false
-        }
-        return ["osx", "linux32", "musl", "s390x", "riscv64", "ppc64le", "aarch64"].any(file::contains)
-    }
-}
-
-processIncludeJars {
-    outputs.cacheIf {true}
-
-    dependsOn makeExcludedRocksDB
-    jars = jars.filter {!it.name.startsWith('rocksdb')}
-    jars.from(makeExcludedRocksDB)
-}
-*/
-
-// NeoForge: remapJar is handled by NeoGradle automatically.
-/*
-remapJar {
-    doFirst {
-        delete fileTree(getDestinationDirectory().get())
-    }
-
-    if (!isInGHA) {
-        def hash = gitCommitHash();
-        if (!hash.equals("<UnknownCommit>")) {
-            archiveClassifier.set(hash);
-        }
-    }
-}
-*/
-
-project.ext.lwjglVersion = "3.3.3"
 
 // Configuration to download LWJGL natives for repackaging
 configurations {
