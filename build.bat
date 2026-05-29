@@ -1,10 +1,11 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 pushd "%~dp0" || exit /b 1
 
 set "MC_VERSION="
 set "REQUIRED_JAVA="
+set "JAVA_HOME_FOUND="
 
 if exist "gradle.properties" (
   for /f "usebackq tokens=1,* delims==" %%A in ("gradle.properties") do (
@@ -27,42 +28,20 @@ if not defined REQUIRED_JAVA (
 echo Detected Minecraft version: %MC_VERSION%
 echo Required Java version: %REQUIRED_JAVA%
 
-for /f "usebackq delims=" %%I in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$ErrorActionPreference = 'Stop'; ^
-   $required = [int]$env:REQUIRED_JAVA; ^
-   function Get-Major([string]$javaExe) { ^
-     if ([string]::IsNullOrWhiteSpace($javaExe)) { return $null } ^
-     if (-not (Test-Path $javaExe)) { return $null } ^
-     $lines = & $javaExe -version 2>&1; ^
-     if ($LASTEXITCODE -ne 0) { return $null } ^
-     $text = [string]::Join([Environment]::NewLine, $lines); ^
-     if ($text -match '\"(?<ver>\d+)') { return [int]$Matches.ver } ^
-     return $null ^
-   }; ^
-   function Test-Home([string]$home) { ^
-     if ([string]::IsNullOrWhiteSpace($home)) { return $null } ^
-     if (-not (Test-Path $home)) { return $null } ^
-     $javaExe = Join-Path $home 'bin\java.exe'; ^
-     if ((Get-Major $javaExe) -eq $required) { return (Resolve-Path $home).Path } ^
-     return $null ^
-   }; ^
-   function Find-Home { ^
-     $found = Test-Home $env:JAVA_HOME; ^
-     if ($found) { return $found } ^
-     $root = 'C:\Program Files\Eclipse Adoptium'; ^
-     if (Test-Path $root) { ^
-       foreach ($child in Get-ChildItem $root -Directory -ErrorAction SilentlyContinue) { ^
-         $found = Test-Home $child.FullName; ^
-         if ($found) { return $found } ^
-       } ^
-     } ^
-     return $null ^
-   }; ^
-   $home = Find-Home; ^
-   if ($home) { [Console]::Write($home) }"`) do set "JAVA_HOME=%%I"
+if defined JAVA_HOME (
+  call :try_java_home "%JAVA_HOME%"
+)
+
+if not defined JAVA_HOME_FOUND (
+  if exist "C:\Program Files\Eclipse Adoptium" (
+    for /d %%D in ("C:\Program Files\Eclipse Adoptium\*") do (
+      if not defined JAVA_HOME_FOUND call :try_java_home "%%D"
+    )
+  )
+)
 
 :ask_java
-if not defined JAVA_HOME (
+if not defined JAVA_HOME_FOUND (
   echo.
   echo Java %REQUIRED_JAVA% was not found.
   echo.
@@ -75,14 +54,18 @@ if not defined JAVA_HOME (
   echo Type D if you want to open the Java download page instead.
   echo Type Q to quit.
   echo.
+
+  set "USER_JAVA="
   set /p "USER_JAVA=Your choice: "
 
-  if /i "%USER_JAVA%"=="Q" (
+  set "USER_JAVA=!USER_JAVA:"=!"
+
+  if /i "!USER_JAVA!"=="Q" (
     popd
     exit /b 1
   )
 
-  if /i "%USER_JAVA%"=="D" (
+  if /i "!USER_JAVA!"=="D" (
     start "" "https://adoptium.net/temurin/releases/?os=windows&arch=x64&package=jdk&version=%REQUIRED_JAVA%"
     echo.
     echo Install Java %REQUIRED_JAVA%, then run this file again.
@@ -91,42 +74,22 @@ if not defined JAVA_HOME (
     exit /b 1
   )
 
-  for /f "usebackq delims=" %%I in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-    "$ErrorActionPreference = 'Stop'; ^
-     $required = [int]$env:REQUIRED_JAVA; ^
-     $inputPath = $env:USER_JAVA; ^
-     function Get-Major([string]$javaExe) { ^
-       if ([string]::IsNullOrWhiteSpace($javaExe)) { return $null } ^
-       if (-not (Test-Path $javaExe)) { return $null } ^
-       $lines = & $javaExe -version 2>&1; ^
-       if ($LASTEXITCODE -ne 0) { return $null } ^
-       $text = [string]::Join([Environment]::NewLine, $lines); ^
-       if ($text -match '\"(?<ver>\d+)') { return [int]$Matches.ver } ^
-       return $null ^
-     }; ^
-     function Test-Home([string]$home) { ^
-       if ([string]::IsNullOrWhiteSpace($home)) { return $null } ^
-       if (-not (Test-Path $home)) { return $null } ^
-       $javaExe = Join-Path $home 'bin\java.exe'; ^
-       if ((Get-Major $javaExe) -eq $required) { return (Resolve-Path $home).Path } ^
-       return $null ^
-     }; ^
-     if ($inputPath.EndsWith('java.exe')) { ^
-       if ((Get-Major $inputPath) -eq $required) { ^
-         [Console]::Write((Resolve-Path (Split-Path (Split-Path $inputPath -Parent) -Parent)).Path) ^
-       } ^
-     } else { ^
-       $home = Test-Home $inputPath; ^
-       if ($home) { [Console]::Write($home) } ^
-     }"`) do set "JAVA_HOME=%%I"
+  if exist "!USER_JAVA!\bin\java.exe" (
+    call :try_java_home "!USER_JAVA!"
+  ) else (
+    if exist "!USER_JAVA!" (
+      call :try_java_exe "!USER_JAVA!"
+    )
+  )
 
-  if not defined JAVA_HOME (
+  if not defined JAVA_HOME_FOUND (
     echo.
     echo The provided Java path is not Java %REQUIRED_JAVA%.
     goto ask_java
   )
 )
 
+set "JAVA_HOME=%JAVA_HOME_FOUND%"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
 
 echo.
@@ -144,3 +107,36 @@ exit /b 0
 set "BUILD_ERROR=%ERRORLEVEL%"
 popd
 exit /b %BUILD_ERROR%
+
+:try_java_home
+set "TEST_HOME=%~1"
+
+if "%TEST_HOME%"=="" exit /b 0
+if not exist "%TEST_HOME%\bin\java.exe" exit /b 0
+
+call :try_java_exe "%TEST_HOME%\bin\java.exe"
+exit /b 0
+
+:try_java_exe
+set "TEST_JAVA=%~1"
+set "JAVA_VERSION="
+set "JAVA_MAJOR="
+
+if "%TEST_JAVA%"=="" exit /b 0
+if not exist "%TEST_JAVA%" exit /b 0
+
+for /f tokens^=2^ delims^=^" %%V in ('"%TEST_JAVA%" -version 2^>^&1') do (
+  set "JAVA_VERSION=%%V"
+  goto parse_java_version
+)
+
+exit /b 0
+
+:parse_java_version
+for /f "tokens=1 delims=." %%M in ("%JAVA_VERSION%") do set "JAVA_MAJOR=%%M"
+
+if "%JAVA_MAJOR%"=="%REQUIRED_JAVA%" (
+  for %%P in ("%TEST_JAVA%\..\..") do set "JAVA_HOME_FOUND=%%~fP"
+)
+
+exit /b 0
