@@ -61,6 +61,8 @@ public class RenderDataFactory {
     private int maxZ;
 
     private int quadCount = 0;
+    private boolean meshFluids;
+    private boolean meshFluidSides;
 
     private final OccupancySet occupancy = new OccupancySet();
 
@@ -250,7 +252,7 @@ public class RenderDataFactory {
 
             if ((i & 63) == 0 && notEmpty != 0) {
                 long nonOpaque = (notEmpty^opaque)&~pureFluid;
-                long fluid = pureFluid|partialFluid;
+                long fluid = this.meshFluids ? pureFluid|partialFluid : 0;
                 this.opaqueMasks[(i >> 5) - 2] = (int) opaque;
                 this.opaqueMasks[(i >> 5) - 1] = (int) (opaque>>>32);
                 this.nonOpaqueMasks[(i >> 5) - 2] = (int) nonOpaque;
@@ -832,8 +834,10 @@ public class RenderDataFactory {
             this.generateYZOpaqueInnerGeometry(axis);
             this.generateYZOpaqueOuterGeometry(axis);
 
-            this.generateYZFluidInnerGeometry(axis);
-            this.generateYZFluidOuterGeometry(axis);
+            if (this.meshFluids && (axis == 0 || this.meshFluidSides)) {
+                this.generateYZFluidInnerGeometry(axis);
+                this.generateYZFluidOuterGeometry(axis);
+            }
             if (CHECK_NEIGHBOR_FACE_OCCLUSION) {
                 this.generateYZNonOpaqueInnerGeometry(axis);
                 this.generateYZNonOpaqueOuterGeometry(axis);
@@ -1553,8 +1557,10 @@ public class RenderDataFactory {
             mesher.finish();
         }
 
-        this.generateXInnerFluidGeometry();
-        this.generateXOuterFluidGeometry();
+        if (this.meshFluids && this.meshFluidSides) {
+            this.generateXInnerFluidGeometry();
+            this.generateXOuterFluidGeometry();
+        }
 
         for (var mesher : this.xAxisMeshers) {
             mesher.finish();
@@ -1638,6 +1644,10 @@ public class RenderDataFactory {
         Arrays.fill(this.opaqueMasks, 0);
         Arrays.fill(this.nonOpaqueMasks, 0);
         Arrays.fill(this.fluidMasks, 0);
+        this.meshFluids = true;
+        // Coarse fluid side faces can become large translucent walls during vanilla-to-LOD handoff.
+        // Keep distant water surfaces visible, but only emit vertical fluid sides at full detail.
+        this.meshFluidSides = section.lvl == 0;
 
         //Prepare everything
         int neighborMskAndFlags = this.prepareSectionData(section._unsafeGetRawDataArray());

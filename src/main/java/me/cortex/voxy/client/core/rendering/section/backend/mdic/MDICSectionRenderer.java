@@ -226,6 +226,7 @@ public class MDICSectionRenderer extends AbstractSectionRenderer<MDICViewport, B
 
         glDisable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
+        glDepthMask(false);
         this.translucentTerrainShader.bind();
         glBindVertexArray(GlVertexArray.STATIC_VAO);//Needs to be before binding
         this.pipeline.setupAndBindTranslucent(viewport);
@@ -242,6 +243,7 @@ public class MDICSectionRenderer extends AbstractSectionRenderer<MDICViewport, B
         glBindSampler(1, 0);
         glBindTextureUnit(1, 0);
 
+        glDepthMask(true);
         glDisable(GL_BLEND);
     }
 

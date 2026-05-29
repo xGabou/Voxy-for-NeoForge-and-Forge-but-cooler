@@ -70,6 +70,7 @@ public class VoxyRenderSystem {
     public final ChunkBoundRenderer chunkBoundRenderer;
 
     private final ViewportSelector<?> viewportSelector;
+    private long renderedFrameCount;
 
     private final AbstractRenderPipeline pipeline;
 
@@ -223,6 +224,7 @@ public class VoxyRenderSystem {
         if (viewport == null) {
             return;
         }
+        this.renderedFrameCount++;
 
         // MC 1.21.1 NeoForge: Fog is handled by VoxyClientEvents.onRenderFog()
         // which listens to ViewportEvent.RenderFog and pushes fog to infinity
@@ -241,6 +243,15 @@ public class VoxyRenderSystem {
             oldBufferBindings[i] = glGetIntegeri(GL_SHADER_STORAGE_BUFFER_BINDING, i);
         }
 
+        int oldProgram = GL11.glGetInteger(GL_CURRENT_PROGRAM);
+        int oldVertexArray = GL11.glGetInteger(GL_VERTEX_ARRAY_BINDING);
+        int oldDepthFunc = GL11.glGetInteger(GL_DEPTH_FUNC);
+        int oldActiveTexture = GL11.glGetInteger(GL_ACTIVE_TEXTURE);
+        boolean oldBlend = glIsEnabled(GL_BLEND);
+        boolean oldCullFace = glIsEnabled(GL_CULL_FACE);
+        boolean oldDepthTest = glIsEnabled(GL_DEPTH_TEST);
+        boolean oldStencilTest = glIsEnabled(GL_STENCIL_TEST);
+        boolean oldDepthMask = glGetBoolean(GL_DEPTH_WRITEMASK);
 
         int oldFB = GL11.glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
         int boundFB = oldFB;
@@ -299,10 +310,15 @@ public class VoxyRenderSystem {
         glViewport(dims[0], dims[1], dims[2], dims[3]);
 
         {//Reset state manager stuffs
-            glUseProgram(0);
-            glEnable(GL_DEPTH_TEST);
+            glUseProgram(oldProgram);
+            setGlCapability(GL_BLEND, oldBlend);
+            setGlCapability(GL_CULL_FACE, oldCullFace);
+            setGlCapability(GL_DEPTH_TEST, oldDepthTest);
+            setGlCapability(GL_STENCIL_TEST, oldStencilTest);
+            glDepthFunc(oldDepthFunc);
+            glDepthMask(oldDepthMask);
 
-            GlStateManager._glBindVertexArray(0);//Clear binding
+            GlStateManager._glBindVertexArray(oldVertexArray);
 
             GlStateManager._activeTexture(GlConst.GL_TEXTURE1);
             for (int i = 0; i < 12; i++) {
@@ -318,6 +334,7 @@ public class VoxyRenderSystem {
             for (int i = 0; i < oldBufferBindings.length; i++) {
                 glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, oldBufferBindings[i]);
             }
+            GlStateManager._activeTexture(oldActiveTexture);
 
             //((SodiumShader) Iris.getPipelineManager().getPipelineNullable().getSodiumPrograms().getProgram(DefaultTerrainRenderPasses.CUTOUT).getInterface()).setupState(DefaultTerrainRenderPasses.CUTOUT, fogParameters);
         }
@@ -351,6 +368,14 @@ public class VoxyRenderSystem {
         this.postProcessing.renderPost(viewport, matrices.projection(), boundFB);
         TimingStatistics.F.stop();
          */
+    }
+
+    private static void setGlCapability(int capability, boolean enabled) {
+        if (enabled) {
+            glEnable(capability);
+        } else {
+            glDisable(capability);
+        }
     }
 
 
@@ -423,6 +448,10 @@ public class VoxyRenderSystem {
 
     public Viewport<?> getViewport() {
         return this.viewportSelector.getViewport();
+    }
+
+    public long getRenderedFrameCount() {
+        return this.renderedFrameCount;
     }
 
 
