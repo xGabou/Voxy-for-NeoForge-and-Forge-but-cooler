@@ -103,6 +103,9 @@ public class VoxyWarningScreen extends Screen {
         int panelBottom = this.height - 16;
 
         guiGraphics.fill(contentLeft - 12, panelTop - 12, contentLeft + contentWidth + 12, panelBottom, 0xB0141C24);
+
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+
         guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, panelTop, 0xFFF4F4F4);
 
         int y = panelTop + 24;
@@ -113,17 +116,21 @@ public class VoxyWarningScreen extends Screen {
 
         int remainingMs = Math.max(0, LOCK_TIME_MS - (int) (Util.getMillis() - this.openedAt));
         int remainingSeconds = (remainingMs + 999) / 1000;
+
         Component countdown = remainingSeconds > 0
-            ? Component.literal("You cannot close this screen for " + remainingSeconds + " second" + (remainingSeconds == 1 ? "" : "s") + ".")
-            : Component.literal("The screen is unlocked. Type I UNDERSTAND to continue.");
+                ? Component.literal("You cannot close this screen for " + remainingSeconds + " second" + (remainingSeconds == 1 ? "" : "s") + ".")
+                : Component.literal("The screen is unlocked. Type I UNDERSTAND to continue.");
+
         guiGraphics.drawCenteredString(this.font, countdown, this.width / 2, y, 0xFFF8E48A);
         guiGraphics.drawCenteredString(this.font, INPUT_PROMPT, this.width / 2, y + 12, 0xFFF4F4F4);
 
         if (!this.statusMessage.getString().isBlank()) {
-            guiGraphics.drawCenteredString(this.font, this.statusMessage, this.width / 2, this.height - 60, 0xFFACF59B);
-        }
+            int statusY = this.acknowledgementBox != null
+                    ? this.acknowledgementBox.getY() - 14
+                    : this.height - 92;
 
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
+            guiGraphics.drawCenteredString(this.font, this.statusMessage, this.width / 2, statusY, 0xFFACF59B);
+        }
     }
 
     private boolean isUnlocked() {
