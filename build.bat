@@ -20,8 +20,10 @@ if not defined REQUIRED_JAVA (
   echo Could not detect a supported Minecraft version from gradle.properties.
   echo Found minecraft_version=%MC_VERSION%
   echo Supported versions are 1.21.1 and 1.20.1.
+  echo.
+  echo Press any key to exit...
+  pause >nul
   popd
-  pause
   exit /b 1
 )
 
@@ -61,6 +63,9 @@ if not defined JAVA_HOME_FOUND (
   set "USER_JAVA=!USER_JAVA:"=!"
 
   if /i "!USER_JAVA!"=="Q" (
+    echo.
+    echo Press any key to exit...
+    pause >nul
     popd
     exit /b 1
   )
@@ -69,8 +74,10 @@ if not defined JAVA_HOME_FOUND (
     start "" "https://adoptium.net/temurin/releases/?os=windows&arch=x64&package=jdk&version=%REQUIRED_JAVA%"
     echo.
     echo Install Java %REQUIRED_JAVA%, then run this file again.
+    echo.
+    echo Press any key to exit...
+    pause >nul
     popd
-    pause
     exit /b 1
   )
 
@@ -100,11 +107,23 @@ call gradlew.bat build
 if errorlevel 1 goto build_failed
 
 start "" explorer "%CD%\build\libs"
+
+echo.
+echo Build completed successfully.
+echo Press any key to exit...
+pause >nul
+
 popd
 exit /b 0
 
 :build_failed
 set "BUILD_ERROR=%ERRORLEVEL%"
+
+echo.
+echo Build failed with error code %BUILD_ERROR%.
+echo Press any key to exit...
+pause >nul
+
 popd
 exit /b %BUILD_ERROR%
 
