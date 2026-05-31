@@ -58,8 +58,8 @@ For a performance critical LOD mod like Voxy, avoiding the translation layer is 
 ## Building
 
 ```bash
-git clone https://github.com/xGabou/Cool-voxy.git
-cd Cool-voxy
+git clone https://github.com/xGabou/Voxy-for-NeoForge-and-Forge-but-cooler.git
+cd Voxy-for-NeoForge-and-Forge-but-cooler
 ./gradlew build
 ```
 
