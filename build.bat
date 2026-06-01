@@ -42,6 +42,14 @@ if not defined JAVA_HOME_FOUND (
   )
 )
 
+if not defined JAVA_HOME_FOUND (
+  if exist ".java" (
+    for /d %%D in (".java\*") do (
+      if not defined JAVA_HOME_FOUND call :try_java_home "%%D"
+    )
+  )
+)
+
 :ask_java
 if not defined JAVA_HOME_FOUND (
   echo.
@@ -53,7 +61,7 @@ if not defined JAVA_HOME_FOUND (
   echo or:
   echo   C:\Program Files\Eclipse Adoptium\jdk-%REQUIRED_JAVA%...\bin\java.exe
   echo.
-  echo Type D if you want to open the Java download page instead.
+  echo Type D if you want to download Java automatically.
   echo Type Q to quit.
   echo.
 
@@ -71,21 +79,23 @@ if not defined JAVA_HOME_FOUND (
   )
 
   if /i "!USER_JAVA!"=="D" (
-    start "" "https://adoptium.net/temurin/releases/?os=windows&arch=x64&package=jdk&version=%REQUIRED_JAVA%"
-    echo.
-    echo Install Java %REQUIRED_JAVA%, then run this file again.
-    echo.
-    echo Press any key to exit...
-    pause >nul
-    popd
-    exit /b 1
-  )
-
-  if exist "!USER_JAVA!\bin\java.exe" (
-    call :try_java_home "!USER_JAVA!"
+    call :download_java
+    if not defined JAVA_HOME_FOUND (
+      echo.
+      echo Java %REQUIRED_JAVA% download or extraction failed.
+      echo.
+      echo Press any key to exit...
+      pause >nul
+      popd
+      exit /b 1
+    )
   ) else (
-    if exist "!USER_JAVA!" (
-      call :try_java_exe "!USER_JAVA!"
+    if exist "!USER_JAVA!\bin\java.exe" (
+      call :try_java_home "!USER_JAVA!"
+    ) else (
+      if exist "!USER_JAVA!" (
+        call :try_java_exe "!USER_JAVA!"
+      )
     )
   )
 
@@ -126,6 +136,43 @@ pause >nul
 
 popd
 exit /b %BUILD_ERROR%
+
+:download_java
+set "LOCAL_JAVA_DIR=%CD%\.java"
+set "LOCAL_JAVA_ZIP=%LOCAL_JAVA_DIR%\jdk-%REQUIRED_JAVA%.zip"
+set "LOCAL_JAVA_EXTRACT=%LOCAL_JAVA_DIR%\jdk-%REQUIRED_JAVA%"
+set "JAVA_DOWNLOAD_URL=https://api.adoptium.net/v3/binary/latest/%REQUIRED_JAVA%/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
+
+echo.
+echo Downloading Java %REQUIRED_JAVA%...
+echo.
+
+if not exist "%LOCAL_JAVA_DIR%" mkdir "%LOCAL_JAVA_DIR%"
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$ProgressPreference='SilentlyContinue'; Invoke-WebRequest -Uri '%JAVA_DOWNLOAD_URL%' -OutFile '%LOCAL_JAVA_ZIP%'"
+
+if errorlevel 1 exit /b 1
+if not exist "%LOCAL_JAVA_ZIP%" exit /b 1
+
+echo.
+echo Extracting Java %REQUIRED_JAVA%...
+echo.
+
+if exist "%LOCAL_JAVA_EXTRACT%" rmdir /s /q "%LOCAL_JAVA_EXTRACT%"
+mkdir "%LOCAL_JAVA_EXTRACT%"
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "Expand-Archive -LiteralPath '%LOCAL_JAVA_ZIP%' -DestinationPath '%LOCAL_JAVA_EXTRACT%' -Force"
+
+if errorlevel 1 exit /b 1
+
+for /r "%LOCAL_JAVA_EXTRACT%" %%J in (java.exe) do (
+  call :try_java_exe "%%J"
+  if defined JAVA_HOME_FOUND exit /b 0
+)
+
+exit /b 1
 
 :try_java_home
 set "TEST_HOME=%~1"
